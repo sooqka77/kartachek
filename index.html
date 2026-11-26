@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>КартаЧек — чекер карточек Яндекс Карт, 2ГИС и конвейер отзывов</title>
+  <meta name="description" content="Бесплатная проверка карточки офлайн-точки на Яндекс Картах и 2ГИС за 30 секунд: индекс здоровья, дыры в выдаче, QR-стенд для белых отзывов и SEO-ответы.">
+  <meta property="og:title" content="КартаЧек — рентген вашей точки на Яндекс Картах и 2ГИС">
+  <meta property="og:description" content="Проверьте здоровье карточки за 30 секунд, найдите утечки клиентов и соберите QR-стенд для белых отзывов.">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Автономный экран для клиента по QR (?review=...) -->
+  <div id="review-helper-view" class="review-page hidden"></div>
+
+  <!-- Основной интерфейс чекера -->
+  <div id="main-app">
+    <header class="topbar">
+      <div class="wrap topbar-inner">
+        <a class="brand" href="./">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.63 7.5 12.5 7.5 12.5s7.5-6.87 7.5-12.5C19.5 5.36 16.14 2 12 2z" fill="#E53935"/>
+              <circle cx="12" cy="9.5" r="3" fill="#FFFFFF"/>
+            </svg>
+          </span>
+          <span>
+            <span class="brand-name">КартаЧек</span>
+            <span class="brand-sub">Яндекс Карты · 2ГИС · Отзовики</span>
+          </span>
+        </a>
+        <div class="topbar-right">
+          <span class="pill pill-test">● MVP-тест: PRO открыт бесплатно</span>
+          <label class="pill-lock" title="Переключить превью будущего платного экрана">
+            <input type="checkbox" id="paywall-toggle">
+            <span>Показать paywall</span>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="hero">
+        <h1>Рентген вашей карточки на <span class="mark">Яндекс Картах и 2ГИС</span></h1>
+        <p class="hero-lead">За 30 секунд покажет, почему клиенты из вашего района уходят к соседям, сколько выручки теряется и выдаст белый инструмент сбора отзывов и SEO-ответов. Бесплатно до 3 точек.</p>
+        <div class="hero-bar">
+          <span class="demo-label">Быстрый пример:</span>
+          <div id="demo-buttons" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+        </div>
+      </section>
+
+      <!-- Панель сохранённых точек -->
+      <div class="points-bar" id="points-bar"></div>
+
+      <!-- Карточка ввода данных -->
+      <section class="card no-print">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">Шаг 1 · Данные точки</span>
+            <h2 style="font-size:20px;">Проверьте свою карточку</h2>
+          </div>
+          <div class="mode-tabs" role="tablist">
+            <button type="button" class="mode-tab active" data-input-mode="quick">Быстрый ввод (30 сек)</button>
+            <button type="button" class="mode-tab" data-input-mode="paste">Вставить текст карточки (Ctrl+A → C → V)</button>
+          </div>
+        </div>
+
+        <!-- Режим авторазбора скопированной карточки -->
+        <div id="pane-paste" class="hidden" style="margin-bottom:16px;">
+          <div class="paste-box">
+            <p style="font-weight:700;margin-bottom:6px;">Самый быстрый способ с компьютера — 100% в белую, без паролей и API:</p>
+            <p class="hint" style="margin-bottom:10px;">1) Откройте свою карточку на Яндекс Картах или 2ГИС. 2) Нажмите <b>Ctrl+A</b> (Cmd+A на Mac) → <b>Ctrl+C</b>. 3) Вставьте текст ниже — чекер сам вытащит рейтинг, отзывы, фото, галочку, устаревшие услуги, рекламу конкурентов и % ответов.</p>
+            <div class="field">
+              <textarea id="smart-paste-input" rows="5" placeholder="Вставьте сюда скопированную страницу карточки с Яндекс Карт или 2ГИС..."></textarea>
+            </div>
+            <div class="btn-row" style="margin-top:10px;">
+              <button type="button" class="btn btn-dark btn-sm" id="btn-parse-paste">Распознать и заполнить форму</button>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-clear-paste">Очистить</button>
+            </div>
+            <div class="paste-signals" id="paste-signals"></div>
+          </div>
+        </div>
+
+        <!-- Основная форма -->
+        <form id="audit-form">
+          <div class="form-grid">
+            <div class="field span-2">
+              <label for="f-name">Название организации (как на Яндекс Картах)</label>
+              <input type="text" id="f-name" placeholder="Например: Инжинириум · Коммунарка">
+            </div>
+            <div class="field">
+              <label for="f-niche">Ниша бизнеса</label>
+              <select id="f-niche"></select>
+            </div>
+            <div class="field">
+              <label for="f-city">Город</label>
+              <input type="text" id="f-city" placeholder="Москва">
+            </div>
+            <div class="field span-2">
+              <label for="f-district">Район / метро / ЖК</label>
+              <input type="text" id="f-district" placeholder="Например: ЖК Скандинавия, м. Коммунарка">
+            </div>
+            <div class="field">
+              <label for="f-yandex-url">Ссылка на карточку Яндекс Карт</label>
+              <input type="url" id="f-yandex-url" placeholder="https://yandex.ru/maps/org/.../1234567890/">
+              <span class="hint" id="yandex-url-hint">Извлечём ID для прямой ссылки на отзыв</span>
+            </div>
+            <div class="field">
+              <label for="f-gis-url">Ссылка на 2ГИС (если есть)</label>
+              <input type="url" id="f-gis-url" placeholder="https://2gis.ru/moscow/firm/...">
+              <span class="hint" id="gis-url-hint">Для QR-стенда и синхронизации</span>
+            </div>
+            <div class="field">
+              <label for="f-site-url">Сайт или лендинг точки</label>
+              <input type="url" id="f-site-url" placeholder="https://vash-site.ru">
+            </div>
+          </div>
+
+          <div class="checks-title">Цифры карточки прямо сейчас</div>
+          <div class="form-grid-4">
+            <div class="field">
+              <label for="f-rating">Рейтинг (1.0 – 5.0)</label>
+              <input type="number" id="f-rating" step="0.1" min="0" max="5" placeholder="4.9">
+            </div>
+            <div class="field">
+              <label for="f-reviews">Текстовых отзывов всего</label>
+              <input type="number" id="f-reviews" min="0" placeholder="24">
+            </div>
+            <div class="field">
+              <label for="f-recent30">Новых отзывов за 30 дней</label>
+              <input type="number" id="f-recent30" min="0" placeholder="2">
+            </div>
+            <div class="field">
+              <label for="f-reply-rate">Ответы владельца (%)</label>
+              <input type="number" id="f-reply-rate" min="0" max="100" placeholder="50">
+            </div>
+            <div class="field">
+              <label for="f-photos">Количество фото</label>
+              <input type="number" id="f-photos" min="0" placeholder="35">
+            </div>
+            <div class="field">
+              <label for="f-leader-reviews">Отзывов у лидера района</label>
+              <input type="number" id="f-leader-reviews" min="1" placeholder="150">
+            </div>
+            <div class="field">
+              <label for="f-check">Средний чек / абонемент (₽)</label>
+              <input type="number" id="f-check" min="100" step="100" placeholder="5000">
+            </div>
+            <div class="field">
+              <label for="f-tg">Контакт директора (TG/WA для замечаний)</label>
+              <input type="text" id="f-tg" placeholder="https://t.me/username">
+            </div>
+          </div>
+
+          <div class="checks-title">Быстрый чекап состояния карточки (отметьте, что есть сейчас)</div>
+          <div class="checks-grid">
+            <label class="check-item"><input type="checkbox" id="c-verified"><span>Есть «синяя галочка» (информация подтверждена владельцем)</span></label>
+            <label class="check-item"><input type="checkbox" id="c-rubric"><span>Основная рубрика совпадает с топ-3 конкурентами в выдаче</span></label>
+            <label class="check-item"><input type="checkbox" id="c-services"><span>Услуги и цены заполнены (нет плашки «давно не обновлялось»)</span></label>
+            <label class="check-item"><input type="checkbox" id="c-booking"><span>В карточке работает кнопка онлайн-записи / мессенджера</span></label>
+            <label class="check-item"><input type="checkbox" id="c-news"><span>Публикуются новости, акции или сторис (хотя бы 2 раза/мес)</span></label>
+            <label class="check-item"><input type="checkbox" id="c-owner"><span>Права владельца в Яндекс Бизнесе и 2ГИС у вас под контролем</span></label>
+            <label class="check-item"><input type="checkbox" id="c-2gis"><span>Карточка в 2ГИС заполнена и совпадает по телефону и графику</span></label>
+            <label class="check-item"><input type="checkbox" id="c-dirs"><span>Точка есть и на 3-й площадке (Zoon, Отзовик, профильный каталог)</span></label>
+            <label class="check-item warn-check"><input type="checkbox" id="c-comp-ads"><span><b>⚠ Проблема:</b> На вашей карточке показывается реклама конкурентов («Ещё может подойти»)</span></label>
+            <label class="check-item warn-check"><input type="checkbox" id="c-dupes"><span><b>⚠ Проблема:</b> Есть дубли карточки по этому адресу / бренду</span></label>
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Проверить карточку →</button>
+            <button type="button" class="btn btn-outline" id="btn-open-yandex-serp">Открыть выдачу района на Яндекс Картах ↗</button>
+            <button type="button" class="btn btn-outline" id="btn-share-report">Поделиться отчётом по ссылке</button>
+            <button type="button" class="btn btn-outline" id="btn-print-report">Сохранить PDF</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ДАШБОРД РЕЗУЛЬТАТОВ (БЕСПЛАТНАЯ ЧАСТЬ) -->
+      <section class="card" id="results-section">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">Бесплатный рентген · До 3 точек</span>
+            <h2 style="font-size:21px;" id="res-point-title">Индекс здоровья карточки</h2>
+          </div>
+          <div class="traffic-counts" id="res-traffic-counts"></div>
+        </div>
+
+        <div class="score-hero">
+          <div class="gauge-box">
+            <div class="gauge-ring">
+              <svg viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#DDE2EA" stroke-width="11"/>
+                <circle id="gauge-arc" cx="60" cy="60" r="50" fill="none" stroke="#15803D" stroke-width="11" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+              </svg>
+              <div class="gauge-num">
+                <strong id="res-score">0</strong>
+                <span>из 100</span>
+              </div>
+            </div>
+            <span class="status-badge" id="res-status-badge">—</span>
+          </div>
+
+          <div>
+            <p id="res-summary" style="font-size:15px;font-weight:500;"></p>
+            <div class="pillars-list" id="res-pillars"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Светофор проблем -->
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">Диагностика по 20 факторам</span>
+            <h2 style="font-size:19px;">Что именно режет заявки и как починить</h2>
+          </div>
+          <div class="filter-row" id="findings-filters">
+            <button type="button" class="filter-btn active" data-filter="all">Все</button>
+            <button type="button" class="filter-btn" data-filter="red">Критично</button>
+            <button type="button" class="filter-btn" data-filter="yellow">Улучшить</button>
+            <button type="button" class="filter-btn" data-filter="green">Хорошо</button>
+          </div>
+        </div>
+        <div class="findings-list" id="res-findings"></div>
+      </section>
+
+      <!-- Разрыв с конкурентом и ROI -->
+      <section class="split-2">
+        <div class="card">
+          <span class="eyebrow">Гонка в вашем районе</span>
+          <h3 style="font-size:17px;">Разрыв с лидером выдачи</h3>
+          <p class="hint" style="margin-top:4px;" id="comp-desc"></p>
+          <div class="stat-grid" id="comp-stats"></div>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Оценка упущенного спроса</span>
+          <h3 style="font-size:17px;">Сколько клиентов уходит соседям</h3>
+          <p class="hint" style="margin-top:4px;">Консервативная модель при росте индекса карточки до 85+ и конверсии 25% из обращения в оплату.</p>
+          <div class="stat-grid" id="roi-stats"></div>
+        </div>
+      </section>
+
+      <!-- PRO-СЕКЦИЯ (А-ЛЯ ПЛАТНАЯ, ОТКРЫТА БЕСПЛАТНО НА ТЕСТ) -->
+      <section class="card pro-card" id="pro-section">
+        <div class="pro-banner">
+          <div class="pro-banner-left">
+            <span class="pill pill-pro">PRO · 1 990 ₽/мес</span>
+            <h2>Инструменты прокачки и конвейер отзывов</h2>
+          </div>
+          <span class="pill pill-test">Открыто бесплатно на время теста</span>
+        </div>
+
+        <div class="pro-body" id="pro-body">
+          <div class="paywall-overlay">
+            <div class="paywall-modal">
+              <span class="pill pill-pro" style="margin-bottom:10px;">PRO ТАРИФ</span>
+              <h3>Автопилот карточки и конвейер отзывов</h3>
+              <p>QR-тейблтент с умным помощником отзыва, конструктор SEO-ответов, обжалование фейков, UTM-метки, 14-дневный план и безлимит точек.</p>
+              <div class="paywall-price">1 990 ₽ <span style="font-size:14px;font-weight:500;color:var(--muted);">/ мес за точку</span></div>
+              <button type="button" class="btn btn-primary" id="btn-unlock-test" style="width:100%;">Открыть бесплатно (режим теста)</button>
+            </div>
+          </div>
+
+          <div class="pro-inner">
+            <div class="pro-tabs no-print" id="pro-tabs">
+              <button type="button" class="pro-tab active" data-pro-tab="qr">1. QR-стенд и сбор отзывов</button>
+              <button type="button" class="pro-tab" data-pro-tab="replies">2. SEO-ответы и обжалование</button>
+              <button type="button" class="pro-tab" data-pro-tab="tools">3. Название, UTM и план 14 дней</button>
+              <button type="button" class="pro-tab" data-pro-tab="compare">4. Сравнение всех точек</button>
+            </div>
+
+            <!-- PRO TAB 1: QR-стенд и скрипты -->
+            <div class="pro-pane" id="pro-pane-qr">
+              <div class="qr-studio">
+                <div>
+                  <h3 style="font-size:17px;margin-bottom:6px;">Белый конвейер живых отзывов</h3>
+                  <p class="hint" style="margin-bottom:14px;">Люди не пишут отзывы не потому, что им не понравилось — им лень придумывать текст. Поставьте тейблтент на ресепшен или кидайте ссылку в чат после визита.</p>
+
+                  <div class="field" style="margin-bottom:12px;">
+                    <label for="qr-mode">Куда ведёт QR-код</label>
+                    <select id="qr-mode">
+                      <option value="helper">Умный помощник отзыва (клиент жмёт 3 тега → готовый текст → Яндекс/2ГИС + перехват замечаний)</option>
+                      <option value="yandex">Прямо на форму отзыва в Яндекс Картах</option>
+                      <option value="gis">Прямо на форму отзыва в 2ГИС</option>
+                    </select>
+                  </div>
+
+                  <div class="field" style="margin-bottom:12px;">
+                    <label for="tent-cta">Заголовок на печатном стенде</label>
+                    <input type="text" id="tent-cta" value="Понравилось у нас? Поделитесь за 30 секунд!">
+                  </div>
+
+                  <div class="copy-block">
+                    <div class="copy-block-head">
+                      <strong>Готовая ссылка для WhatsApp / Telegram / QR</strong>
+                      <button type="button" class="btn btn-outline btn-sm" id="btn-copy-qr-url">Копировать</button>
+                    </div>
+                    <div class="mono" id="qr-target-url" style="font-size:12px;word-break:break-all;color:var(--muted);"></div>
+                  </div>
+
+                  <div class="btn-row" style="margin-top:10px;margin-bottom:18px;">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-open-helper-preview">Открыть как клиент ↗</button>
+                    <button type="button" class="btn btn-dark btn-sm" id="btn-download-qr-png">Скачать QR (PNG)</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-print-tent">Распечатать стенд A5</button>
+                  </div>
+
+                  <h4 style="font-family:var(--body);font-size:15px;font-weight:700;margin-bottom:10px;">3 готовых скрипта просьбы об отзыве под вашу нишу</h4>
+                  <div id="scripts-container"></div>
+                </div>
+
+                <!-- Живое превью тейблтента A5 -->
+                <div>
+                  <div class="tent-preview" id="tent-preview">
+                    <span class="tent-badge">СПАСИБО ЗА ВИЗИТ</span>
+                    <div class="tent-title" id="tent-biz-name">Ваша точка</div>
+                    <div class="tent-sub" id="tent-cta-preview">Понравилось у нас? Поделитесь за 30 секунд!</div>
+                    <div class="tent-qr" id="tent-qr-svg"></div>
+                    <div class="tent-steps">
+                      <b>1.</b> Наведите камеру на QR-код<br>
+                      <b>2.</b> Выберите пару слов из подсказок<br>
+                      <b>3.</b> Оставьте честный отзыв на картах
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PRO TAB 2: SEO-ответы и обжалование -->
+            <div class="pro-pane hidden" id="pro-pane-replies">
+              <h3 style="font-size:17px;margin-bottom:6px;">Конструктор живых SEO-ответов на отзывы</h3>
+              <p class="hint" style="margin-bottom:14px;">Яндекс индексирует ответы владельца. Шаблонное «Спасибо, приходите ещё» не работает — вплетайте услугу, район и живую деталь.</p>
+              <div class="form-grid">
+                <div class="field span-3">
+                  <label for="rep-text">Текст отзыва клиента</label>
+                  <textarea id="rep-text" rows="3" placeholder="Вставьте отзыв клиента, например: Ребёнку очень понравился педагог, после третьего занятия сам собрал робота!"></textarea>
+                </div>
+                <div class="field">
+                  <label for="rep-client">Имя клиента (если видно)</label>
+                  <input type="text" id="rep-client" placeholder="Елена">
+                </div>
+                <div class="field">
+                  <label for="rep-tone">Тональность</label>
+                  <select id="rep-tone">
+                    <option value="auto">Определить автоматически</option>
+                    <option value="positive">Позитивный</option>
+                    <option value="neutral">Нейтральный / со смешанной оценкой</option>
+                    <option value="negative">Негативный</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="rep-kw">Ключевая услуга (для SEO)</label>
+                  <input type="text" id="rep-kw" placeholder="робототехника для детей">
+                </div>
+              </div>
+              <div class="btn-row" style="margin-top:12px;margin-bottom:16px;">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-gen-replies">Сгенерировать 3 варианта ответа</button>
+              </div>
+              <div id="replies-output"></div>
+
+              <hr style="border:0;border-top:1px solid var(--line);margin:20px 0;">
+              <h3 style="font-size:16px;margin-bottom:6px;">Шаблон обжалования фейкового / заказного отзыва</h3>
+              <p class="hint" style="margin-bottom:10px;">Отправляйте в поддержку Яндекс Бизнеса или 2ГИС, если отзыв оставил не клиент или конкурент.</p>
+              <div class="copy-block">
+                <div class="copy-block-head">
+                  <strong>Текст обращения в модерацию</strong>
+                  <button type="button" class="btn btn-outline btn-sm" id="btn-copy-appeal">Копировать</button>
+                </div>
+                <div class="copy-text" id="appeal-text"></div>
+              </div>
+            </div>
+
+            <!-- PRO TAB 3: Проверка названия, UTM, План 14 дней -->
+            <div class="pro-pane hidden" id="pro-pane-tools">
+              <div class="split-2" style="margin-bottom:20px;">
+                <div>
+                  <h3 style="font-size:16px;margin-bottom:6px;">Проверка названия на риск бана Яндекса</h3>
+                  <p class="hint" style="margin-bottom:10px;">Яндекс блокирует правки карточек за ключевые слова, CAPS LOCK и спецсимволы в названии.</p>
+                  <div id="title-compliance-box"></div>
+                </div>
+                <div>
+                  <h3 style="font-size:16px;margin-bottom:6px;">Готовые UTM-ссылки для учёта заявок</h3>
+                  <p class="hint" style="margin-bottom:10px;">Вставьте эти ссылки в карточки, чтобы видеть заявки с карт в Яндекс Метрике.</p>
+                  <div id="utm-output"></div>
+                </div>
+              </div>
+
+              <h3 style="font-size:17px;margin-bottom:6px;">Пошаговый план на 14 дней (прогресс сохраняется)</h3>
+              <p class="hint" style="margin-bottom:12px;">Сформирован автоматически под дыры именно этой точки — без рекламного бюджета.</p>
+              <div id="plan-14-list"></div>
+            </div>
+
+            <!-- PRO TAB 4: Сравнение точек -->
+            <div class="pro-pane hidden" id="pro-pane-compare">
+              <h3 style="font-size:17px;margin-bottom:6px;">Сравнение всех ваших точек</h3>
+              <p class="hint" style="margin-bottom:12px;">Видно, какая точка сейчас самая слабая и даст максимальный прирост при минимальных усилиях.</p>
+              <div class="tbl-wrap" id="compare-table-wrap"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Фидбек для проверки гипотезы с друзьями -->
+      <section class="feedback-card no-print">
+        <div>
+          <h3 style="font-size:17px;color:#FFFFFF;">Тестируете КартаЧек? Оцените идею за 1 клик</h3>
+          <p>Мы проверяем, нужен ли такой чекер предпринимателям в России. Кнопка скопирует короткий отзыв — просто вставьте в Telegram.</p>
+        </div>
+        <div class="fb-btns">
+          <button type="button" class="fb-btn" data-fb="Огонь, купил бы за 1 990 ₽/мес">👍 Купил бы</button>
+          <button type="button" class="fb-btn" data-fb="Полезно как бесплатный чекер, но платить пока не уверен">🤔 Полезно бесплатно</button>
+          <button type="button" class="fb-btn" data-fb="Чего не хватило: ">💬 Чего не хватает</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Слот для чистой печати тейблтента A5 -->
+    <div id="tent-print-slot" class="hidden"></div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="qr.js"></script>
+  <script src="data.js"></script>
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
