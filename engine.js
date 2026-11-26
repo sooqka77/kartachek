@@ -54,13 +54,54 @@
     return out;
   }
 
-  /* 2. Умный разбор скопированного текста карточки (Ctrl+A → Ctrl+C → Ctrl+V с Яндекс Карт / 2ГИС) */
+  /* 2. Умный разбор скопированного текста карточки (Ctrl/Cmd+A → C → V) или вставленной ссылки */
+  function detectNicheFromText(text) {
+    const t = text.toLowerCase();
+    const rules = [
+      ['kids', /(робототехник|детск(?:ий|ая|ое|ие)\s+(?:центр|клуб|сад|кружок|секц|школ|развит)|центр развития реб|кружок|программирован\w*\s+для\s+дет|ментальн\w*\s+арифметик|логопед|подготовк\w*\s+к\s+школ|футбольная школа|детский футбол|чемпионика|инжинириум)/i],
+      ['sport', /(фитнес|падел|padel|теннисн\w*\s+корт|спортклуб|спортивн\w*\s+(?:клуб|школ|секц|комплекс)|йога|пилатес|кроссфит|бассейн|танц(?:ы|ев)|единоборств|бокс)/i],
+      ['food', /(кофейн|ресторан|кафе|пиццери|бистро|пекарн|кондитерск|бар\b|суши|бургерн|столовая|завтраки|бизнес-ланч|средний счёт|средний счет)/i],
+      ['beauty', /(салон красоты|барбершоп|парикмахерск|маникюр|педикюр|ногтев\w*\s+студ|брови|ресниц|косметолог|эпиляц|стрижк|окрашиван)/i],
+      ['med', /(стоматолог|клиника|медицинск\w*\s+центр|медцентр|анализы|узи|терапевт|педиатр|ортодонт|имплантац|поликлиник|врач)/i],
+      ['auto', /(автосервис|автотехцентр|шиномонтаж|детейлинг|автомойк|кузовной ремонт|сход-развал|замена масла|автоэлектрик|техосмотр)/i],
+      ['services', /(ателье|химчистк|ремонт\s+(?:телефон|обув|техник|ноутбук|часов|одежд)|копицентр|дом быта|изготовление ключей|прачечн)/i],
+      ['retail', /(магазин|шоурум|бутик|торгов\w*\s+зал|супермаркет|цветочн|зоомагазин|книжн|одежд|обув)/i]
+    ];
+    for (const [id, re] of rules) {
+      if (re.test(t)) return id;
+    }
+    return null;
+  }
+
   function parsePastedCardText(rawText) {
     const text = String(rawText || '').replace(/\u00a0/g, ' ').trim();
-    if (!text) return { detected: false, signals: [], patch: {} };
+    if (!text) return { detected: false, isUrlOnly: false, signals: [], patch: {} };
 
     const patch = {};
     const signals = [];
+
+    // Проверяем, не вставил ли человек просто ссылку (или 2 ссылки) вместо текста карточки
+    const onlyUrls = text.split(/\s+/).every(tok => /^https?:\/\//i.test(tok) || /^[\w.-]+\.(ru|com)\//i.test(tok));
+    const yUrlMatch = text.match(/https?:\/\/(?:www\.)?yandex\.(?:ru|com)\/(?:maps|profile)[^\s"'<>]*/i);
+    const gUrlMatch = text.match(/https?:\/\/(?:www\.)?2gis\.[a-z]+[^\s"'<>]*/i);
+    if (yUrlMatch) {
+      patch.yandexUrl = yUrlMatch[0];
+      const u = parseCardUrls(yUrlMatch[0], '');
+      signals.push(u.yandexOrgId ? `Ссылка Яндекс Карт (ID ${u.yandexOrgId})` : 'Ссылка Яндекс Карт');
+    }
+    if (gUrlMatch) {
+      patch.gisUrl = gUrlMatch[0];
+      const u = parseCardUrls('', gUrlMatch[0]);
+      signals.push(u.gisFirmId ? `Ссылка 2ГИС (ID ${u.gisFirmId})` : 'Ссылка 2ГИС');
+    }
+    if (onlyUrls && (yUrlMatch || gUrlMatch)) {
+      return {
+        detected: true,
+        isUrlOnly: true,
+        signals: signals.concat(['QR и прямая ссылка на отзыв готовы! Для автозаполнения цифр скопируйте страницу карточки (Cmd/Ctrl+A → C)']),
+        patch
+      };
+    }
 
     const is2gis = /2гис|2gis/i.test(text);
     const isYandex = /яндекс|хорошее место|информация подтверждена владельцем|ещ[её] может подойти|похожие места/i.test(text);
@@ -69,14 +110,38 @@
 
     // Название (первая осмысленная строка не похожая на UI-элемент Яндекс Карт / 2ГИС)
     const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-    const uiSkip = /^(яндекс(\s+карты|\s+бизнес|\s+навигатор)?|карты|поиск|найти(\s+места.*)?|войти|маршрут(ы)?|пробки|слои|панорамы|зеркала|линейка|обзор|товары(\s+и\s+услуги)?|услуги|фото(\s+\d+)?|отзывы(\s+\d+)?|новости|особенности|закрыть|назад|поделиться|сохранить|2гис.*|меню|открыто.*|закрыто.*|показать\s+телефон|построить\s+маршрут|добавить\s+фото|написать\s+отзыв|исправить\s+неточность|\d[\.,]\d)$/i;
-    for (let i = 0; i < Math.min(lines.length, 25); i++) {
+    const uiSkip = /^(яндекс(\s+карты|\s+бизнес|\s+навигатор|\s+go)?|карты|поиск|найти(\s+места.*)?|войти|маршрут(ы)?|пробки|слои|панорамы|зеркала|линейка|обзор|товары(\s+и\s+услуги)?|услуги|фото(\s+\d+)?|отзывы(\s+\d+)?|новости|особенности|закрыть|назад|поделиться|сохранить|2гис.*|меню|открыто.*|закрыто.*|показать\s+телефон|построить\s+маршрут|добавить\s+фото|написать\s+отзыв|исправить\s+неточность|добавить\s+организацию|перейти\s+в|все\s+филиалы|показать\s+на\s+карте|звонок|сайт|вход|выход|\d[\.,]\d)$/i;
+    for (let i = 0; i < Math.min(lines.length, 30); i++) {
       const l = lines[i];
-      if (l.length >= 3 && l.length <= 75 && !uiSkip.test(l) && !/^\d+\s*(оцен|отзыв|фото)/i.test(l) && !/^https?:\/\//i.test(l)) {
+      if (
+        l.length >= 3 && l.length <= 75 &&
+        !uiSkip.test(l) &&
+        !/^\d+\s*(оцен|отзыв|фото|м\b|км\b|мин)/i.test(l) &&
+        !/^(?:https?:\/\/|\+7|8\s*\()/i.test(l)
+      ) {
         patch.name = l;
         signals.push(`Название: «${l}»`);
         break;
       }
+    }
+
+    // Автоопределение ниши
+    const nicheId = detectNicheFromText(text);
+    if (nicheId) {
+      patch.niche = nicheId;
+      signals.push(`Ниша: ${KartaData.NICHES[nicheId].label}`);
+    }
+
+    // Автоопределение города и района / метро
+    const cityMatch = text.match(/(?:^|[^а-яё])(Москва|Санкт-Петербург|Зеленоград|Казань|Екатеринбург|Новосибирск|Краснодар|Нижний Новгород|Самара|Ростов-на-Дону|Уфа|Сочи|Воронеж|Пермь|Тюмень|Химки|Мытищи|Одинцово|Красногорск|Балашиха|Подольск|Королёв|Люберцы)(?=$|[^а-яё])/i);
+    if (cityMatch) {
+      patch.city = cityMatch[1];
+      signals.push(`Город: ${cityMatch[1]}`);
+    }
+    const distMatch = text.match(/(?:ЖК\s+[А-ЯЁA-Z][а-яёa-zA-Z0-9\s-]{2,25}|(?:м\.|метро)\s*[А-ЯЁ][а-яё\s-]{2,22}|(?:ул\.|улица|пр-т|проспект|бульвар|шоссе|наб\.|корп\.|к\d{3,4})[^\n]{3,45})/i);
+    if (distMatch) {
+      patch.district = distMatch[0].replace(/\s+/g, ' ').trim().slice(0, 50);
+      signals.push(`Адрес/район: ${patch.district}`);
     }
 
     // Рейтинг (например 4,9 или 5.0 рядом с оценками или отдельно)
@@ -116,43 +181,46 @@
       }
     }
 
-    // Синяя галочка / верификация
-    if (/информация подтверждена владельцем|подтвержд[её]н(?:ная|а)?\s+организация|официальная карточка/i.test(text)) {
+    // Синяя галочка / верификация / Хорошее место
+    if (/информация подтверждена владельцем|подтвержд[её]н(?:ная|а)?\s+организация|официальная карточка|хорошее место/i.test(text)) {
       patch.verified = true;
-      signals.push('Синяя галочка: есть');
-    } else if (text.length > 350) {
+      signals.push('Синяя галочка / подтверждено: есть');
+    } else if (text.length > 300) {
       patch.verified = false;
-      signals.push('Синяя галочка: не найдена в тексте');
+      signals.push('⚠ Синяя галочка не найдена');
     }
 
     // Блок услуг и «давно не обновлялось»
     if (/давно не обновлял/i.test(text)) {
       patch.servicesUpdated = false;
-      signals.push('⚠ Метка «Давно не обновлялось» в услугах');
-    } else if (/товары и услуги|прайс-лист|цены и услуги/i.test(text)) {
+      signals.push('⚠ Услуги помечены «Давно не обновлялось»');
+    } else if (/товары и услуги|прайс-лист|цены и услуги|меню\s+\d/i.test(text)) {
       patch.servicesUpdated = true;
-      signals.push('Блок «Товары и услуги»: найден');
+      signals.push('Блок услуг / прайс: найден');
+    } else if (text.length > 350) {
+      patch.servicesUpdated = false;
+      signals.push('⚠ Блок «Товары и услуги» не найден');
     }
 
     // Онлайн-запись
-    if (/записаться онлайн|онлайн-запись|забронировать|выбрать время/i.test(text)) {
+    if (/записаться онлайн|онлайн-запись|забронировать|выбрать время|записаться на/i.test(text)) {
       patch.hasOnlineBooking = true;
-      signals.push('Онлайн-запись: подключена');
+      signals.push('Онлайн-запись: есть');
     } else if (text.length > 350) {
       patch.hasOnlineBooking = false;
-      signals.push('Онлайн-запись: не найдена');
+      signals.push('⚠ Онлайн-запись не найдена');
     }
 
     // Новости / сторис
-    if (/(?:^|[^а-яё])(новости|публикации|акции)(?=$|[^а-яё])/i.test(text)) {
+    if (/(?:^|[^а-яё])(новости|публикации|акции|сторис)(?=$|[^а-яё])/i.test(text)) {
       patch.hasNewsStories = true;
-      signals.push('Новости / акции: есть раздел');
+      signals.push('Новости / акции: есть');
     }
 
     // Реклама конкурентов на карточке
     if (/ещ[её] может подойти|похожие места рядом|реклама конкурент|возможно, вам подойд/i.test(text)) {
       patch.hasCompetitorAds = true;
-      signals.push('⚠ На карточке показывается блок конкурентов («Ещё может подойти»)');
+      signals.push('⚠ На карточке крутится реклама конкурента');
     }
 
     // Ответы владельца (считаем отношение видимых «Ответ организации» к видимым отзывам с датами)
@@ -161,7 +229,7 @@
     if (dateMatches.length >= 2) {
       const rate = clamp(Math.round((replyMatches.length / dateMatches.length) * 100), 0, 100);
       patch.replyRate = rate;
-      signals.push(`Ответы владельца (по видимым отзывам): ~${rate}% (${replyMatches.length} из ${dateMatches.length})`);
+      signals.push(`Ответы владельца: ~${rate}% (${replyMatches.length} из ${dateMatches.length})`);
     } else if (replyMatches.length > 0) {
       patch.replyRate = 70;
       signals.push(`Найдены ответы владельца (${replyMatches.length})`);
@@ -171,17 +239,29 @@
     const freshRelative = (text.match(/сегодня|вчера|(?:^|\D)\d+\s+(?:дн|недел)/gi) || []).length;
     if (freshRelative > 0) {
       patch.recentReviews30d = freshRelative;
-      signals.push(`Свежих отзывов за месяц (минимум): ${freshRelative}`);
+      signals.push(`Свежих отзывов за месяц: ${freshRelative}+`);
+    }
+
+    // 2ГИС статус если источник 2ГИС
+    if (is2gis && !isYandex) {
+      patch.has2gisSynced = true;
+    }
+
+    // Telegram контакт
+    const mTg = text.match(/https?:\/\/t\.me\/[a-zA-Z0-9_]+/i);
+    if (mTg) {
+      patch.tgContact = mTg[0];
+      signals.push(`Telegram: ${mTg[0]}`);
     }
 
     // Сайт
-    const mSite = text.match(/https?:\/\/(?!(?:yandex|2gis|vk\.com|t\.me|wa\.me|whatsapp))[\w.-]+\.[a-zрф]{2,}[^\s]*/i);
+    const mSite = text.match(/https?:\/\/(?!(?:yandex|2gis|vk\.com|t\.me|wa\.me|whatsapp|instagram|youtube))[\w.-]+\.[a-zрф]{2,}[^\s]*/i);
     if (mSite) {
       patch.siteUrl = mSite[0].replace(/[),.;]+$/, '');
       signals.push(`Сайт: ${patch.siteUrl}`);
     }
 
-    return { detected: signals.length > 1, signals, patch };
+    return { detected: signals.length > 1, isUrlOnly: false, signals, patch };
   }
 
   /* 3. Проверка названия карточки на риск бана по правилам Яндекс Бизнеса */

@@ -364,13 +364,62 @@ p { margin: 0; }
 .adv-drawer summary::-webkit-details-marker { display: none; }
 .adv-drawer[open] summary { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 
-.paste-box {
-  background: #FFFFFF;
-  border: 1.5px dashed #9CA3AF;
-  border-radius: 12px;
-  padding: 14px;
-  margin-top: 14px;
+.paste-hero-card {
+  border: 2px solid var(--ink);
+  background: linear-gradient(180deg, #FFFDF2 0%, #FFFFFF 42%);
 }
+.paste-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.paste-step {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 10px 12px;
+  font-size: 13px;
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.paste-step .step-n {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--mark);
+  color: var(--mark-ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.paste-step a { font-weight: 700; text-decoration: underline; text-decoration-color: var(--mark); text-underline-offset: 2px; }
+.paste-dropzone {
+  background: #FFFFFF;
+  border: 2px dashed #9CA3AF;
+  border-radius: 14px;
+  padding: 14px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.paste-dropzone:focus-within {
+  border-color: var(--ink);
+  background: #FFFDF5;
+}
+.paste-dropzone textarea {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  font-size: 14px;
+  min-height: 74px;
+  resize: vertical;
+}
+.paste-dropzone textarea:focus { outline: none; }
 .paste-signals { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .sig-chip {
   font-family: var(--mono);
@@ -382,6 +431,7 @@ p { margin: 0; }
   border: 1px solid #A7F3D0;
 }
 .sig-chip.warn { background: #FEF2F2; color: var(--pin); border-color: #FECACA; }
+@media (max-width: 720px) { .paste-steps { grid-template-columns: 1fr; } }
 
 /* Buttons */
 .btn-row { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; margin-top: 14px; }

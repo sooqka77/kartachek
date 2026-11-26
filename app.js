@@ -320,10 +320,12 @@
     }
     saveState();
     populateFormFromPoint(getActivePoint());
+    $('smart-paste-input').value = '';
+    $('paste-signals').innerHTML = '';
     renderAll();
-    $('f-name').focus();
-    $('f-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast('Форма очищена — введите название и ссылку вашей точки');
+    $('smart-paste-input').focus();
+    $('smart-input-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showToast('Готово! Вставьте карточку (Cmd+V) или откройте ручной ввод');
   }
 
   function initStaticControls() {
@@ -742,31 +744,76 @@
     `;
   }
 
+  function runSmartPaste(rawText, scrollOnSuccess) {
+    const parsed = KartaEngine.parsePastedCardText(rawText);
+    const sigWrap = $('paste-signals');
+    if (!parsed.detected) {
+      sigWrap.innerHTML = `<span class="sig-chip warn">Мало данных — откройте карточку на Яндекс Картах или 2ГИС, нажмите Cmd/Ctrl+A → C и вставьте сюда целиком.</span>`;
+      return false;
+    }
+    const pt = getActivePoint();
+    Object.assign(pt, parsed.patch, { isDemo: false });
+    saveState();
+    populateFormFromPoint(pt);
+    renderAll();
+    sigWrap.innerHTML = parsed.signals
+      .map(s => `<span class="sig-chip ${s.startsWith('⚠') ? 'warn' : ''}">${esc(s)}</span>`)
+      .join('');
+    if (parsed.isUrlOnly) {
+      showToast('Ссылка распознана — QR готов! Для автоаудита вставьте текст страницы (Cmd+A → C)');
+    } else {
+      showToast('Карточка распознана автоматически — отчёт готов!');
+      if (scrollOnSuccess) {
+        setTimeout(() => $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' }), 220);
+      }
+    }
+    return true;
+  }
+
   function bindEvents() {
     $('btn-start-own').addEventListener('click', startOwnBlankPoint);
     $('btn-clear-demo').addEventListener('click', startOwnBlankPoint);
 
-    $('btn-parse-paste').addEventListener('click', () => {
-      const parsed = KartaEngine.parsePastedCardText($('smart-paste-input').value);
-      const sigWrap = $('paste-signals');
-      if (!parsed.detected) {
-        sigWrap.innerHTML = `<span class="sig-chip warn">Недостаточно данных — выделите всю страницу карточки (Ctrl/Cmd+A → C) и вставьте целиком.</span>`;
-        return;
+    // Мгновенное автораспознавание сразу при вставке Cmd/Ctrl+V
+    $('smart-paste-input').addEventListener('paste', () => {
+      setTimeout(() => {
+        const val = $('smart-paste-input').value;
+        if (val && val.trim().length > 15) runSmartPaste(val, true);
+      }, 30);
+    });
+
+    // 1-клик вставка из буфера обмена
+    $('btn-paste-clipboard').addEventListener('click', async () => {
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          throw new Error('no-api');
+        }
+        const clip = await navigator.clipboard.readText();
+        if (!clip || !clip.trim()) {
+          showToast('Буфер пуст — сначала скопируйте страницу карточки (Cmd/Ctrl+A → C)');
+          return;
+        }
+        $('smart-paste-input').value = clip;
+        runSmartPaste(clip, true);
+      } catch (_) {
+        $('smart-paste-input').focus();
+        showToast('Нажмите Cmd+V (или Ctrl+V) прямо в поле выше — распознается само!');
       }
-      const pt = getActivePoint();
-      Object.assign(pt, parsed.patch, { isDemo: false });
-      saveState();
-      populateFormFromPoint(pt);
-      renderAll();
-      sigWrap.innerHTML = parsed.signals
-        .map(s => `<span class="sig-chip ${s.startsWith('⚠') ? 'warn' : ''}">${esc(s)}</span>`)
-        .join('');
-      showToast('Карточка распознана — отчёт обновлён!');
+    });
+
+    $('btn-parse-paste').addEventListener('click', () => {
+      runSmartPaste($('smart-paste-input').value, true);
     });
 
     $('btn-clear-paste').addEventListener('click', () => {
       $('smart-paste-input').value = '';
       $('paste-signals').innerHTML = '';
+    });
+
+    $('btn-toggle-manual').addEventListener('click', () => {
+      const dr = $('manual-drawer');
+      dr.open = !dr.open;
+      if (dr.open) $('f-name').focus();
     });
 
     $('audit-form').addEventListener('input', () => { syncPointFromForm(); renderAll(); });

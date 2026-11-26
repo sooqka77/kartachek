@@ -65,114 +65,138 @@
       <!-- Панель сохранённых точек -->
       <div class="points-bar no-print" id="points-bar"></div>
 
-      <!-- ЭКСПРЕСС-ВВОД (5 главных полей + 6 тап-чипсов — удобно с телефона!) -->
-      <section class="card no-print">
+      <!-- ШАГ 1: АВТОРАСПОЗНАВАНИЕ СРАЗУ НАВЕРХУ (БЕЗ МУТОРНОГО ВВОДА!) -->
+      <section class="card paste-hero-card no-print" id="smart-input-card">
         <div class="card-head" style="margin-bottom:12px;">
           <div>
-            <span class="eyebrow">Шаг 1 · Экспресс-ввод за 30 секунд</span>
-            <h2 style="font-size:19px;">Введите базовые данные точки</h2>
+            <span class="eyebrow">Шаг 1 · Автораспознавание за 5 секунд</span>
+            <h2 style="font-size:20px;">Не заполняйте поля — просто вставьте карточку</h2>
           </div>
-          <button type="button" class="btn btn-outline btn-sm" id="btn-open-yandex-serp">Выдача района на Картах ↗</button>
-        </div>
-
-        <form id="audit-form">
-          <div class="form-grid">
-            <div class="field">
-              <label for="f-name">Название (как на вывеске / картах)</label>
-              <input type="text" id="f-name" placeholder="Например: Инжинириум · Бутово">
-            </div>
-            <div class="field">
-              <label for="f-niche">Ниша бизнеса</label>
-              <select id="f-niche"></select>
-            </div>
-            <div class="field">
-              <label for="f-yandex-url">Ссылка на Яндекс Карты</label>
-              <input type="url" id="f-yandex-url" placeholder="https://yandex.ru/maps/org/.../123456/">
-              <span class="hint" id="yandex-url-hint">Извлечём ID для QR и прямой ссылки</span>
-            </div>
-          </div>
-
-          <div class="form-grid-4" style="margin-top:12px;">
-            <div class="field">
-              <label for="f-rating">Рейтинг (1.0 – 5.0)</label>
-              <input type="number" id="f-rating" step="0.1" min="0" max="5" placeholder="4.8">
-            </div>
-            <div class="field">
-              <label for="f-reviews">Текстовых отзывов</label>
-              <input type="number" id="f-reviews" min="0" placeholder="24">
-            </div>
-            <div class="field">
-              <label for="f-recent30">Новых за 30 дней</label>
-              <input type="number" id="f-recent30" min="0" placeholder="2">
-            </div>
-            <div class="field">
-              <label for="f-photos">Количество фото</label>
-              <input type="number" id="f-photos" min="0" placeholder="30">
-            </div>
-          </div>
-
-          <div style="margin-top:14px;">
-            <span class="hint" style="font-weight:700;color:var(--ink);">Отметьте одним тапом, что есть на карточке сейчас:</span>
-            <div class="chip-toggles" id="quick-chips">
-              <label class="tap-chip"><input type="checkbox" id="c-verified"><span class="dot">✓</span><span>Синяя галочка</span></label>
-              <label class="tap-chip"><input type="checkbox" id="c-rubric"><span class="dot">✓</span><span>Рубрика как у топ-3</span></label>
-              <label class="tap-chip"><input type="checkbox" id="c-services"><span class="dot">✓</span><span>Свежий прайс / услуги</span></label>
-              <label class="tap-chip"><input type="checkbox" id="c-booking"><span class="dot">✓</span><span>Онлайн-запись</span></label>
-              <label class="tap-chip"><input type="checkbox" id="c-2gis"><span class="dot">✓</span><span>2ГИС заполнен</span></label>
-              <label class="tap-chip warn-type"><input type="checkbox" id="c-comp-ads"><span class="dot">!</span><span>Есть реклама конкурентов</span></label>
-            </div>
-          </div>
-
-          <!-- Раскрывающийся блок: доп. параметры + авторазбор Ctrl+A -->
-          <details class="adv-drawer" id="adv-drawer">
-            <summary>
-              <span>⚙ Точный аудит (+12 параметров: 2ГИС, сайт, дубли, конкурент и авторазбор с ПК)</span>
-              <span class="hint">Развернуть ▾</span>
-            </summary>
-
-            <div class="form-grid">
-              <div class="field"><label for="f-city">Город</label><input type="text" id="f-city" placeholder="Москва"></div>
-              <div class="field"><label for="f-district">Район / метро / ЖК</label><input type="text" id="f-district" placeholder="ЖК Скандинавия, м. Коммунарка"></div>
-              <div class="field"><label for="f-site-url">Сайт точки (для UTM)</label><input type="url" id="f-site-url" placeholder="https://vash-site.ru"></div>
-              <div class="field">
-                <label for="f-gis-url">Ссылка на 2ГИС</label>
-                <input type="url" id="f-gis-url" placeholder="https://2gis.ru/moscow/firm/...">
-                <span class="hint" id="gis-url-hint">Для QR-стенда и отзывов 2ГИС</span>
-              </div>
-              <div class="field"><label for="f-reply-rate">Ответы владельца (%)</label><input type="number" id="f-reply-rate" min="0" max="100" placeholder="50"></div>
-              <div class="field"><label for="f-leader-reviews">Отзывов у лидера района</label><input type="number" id="f-leader-reviews" min="1" placeholder="150"></div>
-              <div class="field"><label for="f-check">Средний чек / абонемент (₽)</label><input type="number" id="f-check" min="100" step="100" placeholder="5000"></div>
-              <div class="field span-2"><label for="f-tg">Контакт руководителя (Telegram / WhatsApp — для мягкого перехвата замечаний)</label><input type="text" id="f-tg" placeholder="https://t.me/username"></div>
-            </div>
-
-            <div class="chip-toggles" style="margin-top:12px;">
-              <label class="tap-chip"><input type="checkbox" id="c-news"><span class="dot">✓</span><span>Ведём Новости / Сторис</span></label>
-              <label class="tap-chip"><input type="checkbox" id="c-owner"><span class="dot">✓</span><span>Права владельца у нас</span></label>
-              <label class="tap-chip"><input type="checkbox" id="c-dirs"><span class="dot">✓</span><span>Есть на 3-й площадке (Zoon/Отзовик)</span></label>
-              <label class="tap-chip warn-type"><input type="checkbox" id="c-dupes"><span class="dot">!</span><span>Есть дубли карточки</span></label>
-            </div>
-
-            <!-- Авторазбор страницы с ПК -->
-            <div class="paste-box">
-              <p style="font-weight:700;font-size:13.5px;margin-bottom:4px;">⚡ Авторазбор карточки с компьютера (Cmd/Ctrl+A → C → V)</p>
-              <p class="hint" style="margin-bottom:8px;">Откройте свою карточку на Яндекс Картах или 2ГИС, выделите всю страницу, скопируйте и вставьте сюда — поля выше заполнятся автоматически.</p>
-              <div class="field">
-                <textarea id="smart-paste-input" rows="3" placeholder="Вставьте сюда скопированный текст страницы карточки..."></textarea>
-              </div>
-              <div class="btn-row" style="margin-top:8px;">
-                <button type="button" class="btn btn-dark btn-sm" id="btn-parse-paste">Распознать карточку</button>
-                <button type="button" class="btn btn-outline btn-sm" id="btn-clear-paste">Очистить</button>
-              </div>
-              <div class="paste-signals" id="paste-signals"></div>
-            </div>
-          </details>
-
-          <div class="btn-row">
-            <button type="submit" class="btn btn-primary">Показать диагноз и инструменты ↓</button>
-            <button type="button" class="btn btn-outline btn-sm" id="btn-share-report">Поделиться ссылкой</button>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-open-yandex-serp">Выдача района ↗</button>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-share-report">Поделиться</button>
             <button type="button" class="btn btn-outline btn-sm" id="btn-print-report">PDF</button>
           </div>
-        </form>
+        </div>
+
+        <div class="paste-steps">
+          <div class="paste-step">
+            <span class="step-n">1</span>
+            <span>Откройте свою точку на <a href="https://yandex.ru/maps/" target="_blank" rel="noopener">Яндекс Картах ↗</a> или <a href="https://2gis.ru/" target="_blank" rel="noopener">2ГИС ↗</a></span>
+          </div>
+          <div class="paste-step">
+            <span class="step-n">2</span>
+            <span>Нажмите <b>Cmd+A → Cmd+C</b> (на Windows: <b>Ctrl+A → Ctrl+C</b>)</span>
+          </div>
+          <div class="paste-step">
+            <span class="step-n">3</span>
+            <span>Нажмите кнопку ниже или <b>Cmd+V</b> — рейтинг, отзывы, фото, ниша и дыры определятся сами</span>
+          </div>
+        </div>
+
+        <div class="paste-dropzone">
+          <textarea id="smart-paste-input" rows="3" placeholder="Вставьте сюда скопированную страницу карточки (Cmd/Ctrl+V) — распознаётся мгновенно автоматически! Или вставьте ссылку на Яндекс Карты / 2ГИС для QR-кода..."></textarea>
+          <div class="btn-row" style="margin-top:10px;justify-content:space-between;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary" id="btn-paste-clipboard">📋 Вставить из буфера и проверить</button>
+              <button type="button" class="btn btn-dark btn-sm" id="btn-parse-paste">Распознать вставленный текст</button>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-clear-paste">Очистить</button>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-manual">✎ Ввести вручную (с телефона)</button>
+          </div>
+        </div>
+
+        <div class="paste-signals" id="paste-signals"></div>
+
+        <!-- Ручная настройка / доуточнение (аккуратно сворачивается, чтобы не мешать!) -->
+        <details class="adv-drawer" id="manual-drawer" style="margin-top:14px;">
+          <summary>
+            <span>✎ Поправить или ввести данные вручную (удобно с телефона + ссылка на карточку для QR)</span>
+            <span class="hint">Развернуть ▾</span>
+          </summary>
+
+          <form id="audit-form">
+            <div class="form-grid">
+              <div class="field">
+                <label for="f-name">Название (как на вывеске / картах)</label>
+                <input type="text" id="f-name" placeholder="Например: Инжинириум · Бутово">
+              </div>
+              <div class="field">
+                <label for="f-niche">Ниша бизнеса</label>
+                <select id="f-niche"></select>
+              </div>
+              <div class="field">
+                <label for="f-yandex-url">Ссылка на Яндекс Карты (для QR)</label>
+                <input type="url" id="f-yandex-url" placeholder="https://yandex.ru/maps/org/.../123456/">
+                <span class="hint" id="yandex-url-hint">Извлечём ID для QR и прямой ссылки</span>
+              </div>
+            </div>
+
+            <div class="form-grid-4" style="margin-top:12px;">
+              <div class="field">
+                <label for="f-rating">Рейтинг (1.0 – 5.0)</label>
+                <input type="number" id="f-rating" step="0.1" min="0" max="5" placeholder="4.8">
+              </div>
+              <div class="field">
+                <label for="f-reviews">Текстовых отзывов</label>
+                <input type="number" id="f-reviews" min="0" placeholder="24">
+              </div>
+              <div class="field">
+                <label for="f-recent30">Новых за 30 дней</label>
+                <input type="number" id="f-recent30" min="0" placeholder="2">
+              </div>
+              <div class="field">
+                <label for="f-photos">Количество фото</label>
+                <input type="number" id="f-photos" min="0" placeholder="30">
+              </div>
+            </div>
+
+            <div style="margin-top:14px;">
+              <span class="hint" style="font-weight:700;color:var(--ink);">Быстрые переключатели карточки:</span>
+              <div class="chip-toggles" id="quick-chips">
+                <label class="tap-chip"><input type="checkbox" id="c-verified"><span class="dot">✓</span><span>Синяя галочка</span></label>
+                <label class="tap-chip"><input type="checkbox" id="c-rubric"><span class="dot">✓</span><span>Рубрика как у топ-3</span></label>
+                <label class="tap-chip"><input type="checkbox" id="c-services"><span class="dot">✓</span><span>Свежий прайс / услуги</span></label>
+                <label class="tap-chip"><input type="checkbox" id="c-booking"><span class="dot">✓</span><span>Онлайн-запись</span></label>
+                <label class="tap-chip"><input type="checkbox" id="c-2gis"><span class="dot">✓</span><span>2ГИС заполнен</span></label>
+                <label class="tap-chip warn-type"><input type="checkbox" id="c-comp-ads"><span class="dot">!</span><span>Есть реклама конкурентов</span></label>
+              </div>
+            </div>
+
+            <details class="adv-drawer" id="adv-drawer">
+              <summary>
+                <span>⚙ Дополнительные параметры: 2ГИС, сайт, дубли, конкурент, TG директора</span>
+                <span class="hint">Развернуть ▾</span>
+              </summary>
+
+              <div class="form-grid">
+                <div class="field"><label for="f-city">Город</label><input type="text" id="f-city" placeholder="Москва"></div>
+                <div class="field"><label for="f-district">Район / метро / ЖК</label><input type="text" id="f-district" placeholder="ЖК Скандинавия, м. Коммунарка"></div>
+                <div class="field"><label for="f-site-url">Сайт точки (для UTM)</label><input type="url" id="f-site-url" placeholder="https://vash-site.ru"></div>
+                <div class="field">
+                  <label for="f-gis-url">Ссылка на 2ГИС</label>
+                  <input type="url" id="f-gis-url" placeholder="https://2gis.ru/moscow/firm/...">
+                  <span class="hint" id="gis-url-hint">Для QR-стенда и отзывов 2ГИС</span>
+                </div>
+                <div class="field"><label for="f-reply-rate">Ответы владельца (%)</label><input type="number" id="f-reply-rate" min="0" max="100" placeholder="50"></div>
+                <div class="field"><label for="f-leader-reviews">Отзывов у лидера района</label><input type="number" id="f-leader-reviews" min="1" placeholder="150"></div>
+                <div class="field"><label for="f-check">Средний чек / абонемент (₽)</label><input type="number" id="f-check" min="100" step="100" placeholder="5000"></div>
+                <div class="field span-2"><label for="f-tg">Контакт руководителя (Telegram / WhatsApp — для мягкого перехвата замечаний)</label><input type="text" id="f-tg" placeholder="https://t.me/username"></div>
+              </div>
+
+              <div class="chip-toggles" style="margin-top:12px;">
+                <label class="tap-chip"><input type="checkbox" id="c-news"><span class="dot">✓</span><span>Ведём Новости / Сторис</span></label>
+                <label class="tap-chip"><input type="checkbox" id="c-owner"><span class="dot">✓</span><span>Права владельца у нас</span></label>
+                <label class="tap-chip"><input type="checkbox" id="c-dirs"><span class="dot">✓</span><span>Есть на 3-й площадке (Zoon/Отзовик)</span></label>
+                <label class="tap-chip warn-type"><input type="checkbox" id="c-dupes"><span class="dot">!</span><span>Есть дубли карточки</span></label>
+              </div>
+            </details>
+
+            <div class="btn-row">
+              <button type="submit" class="btn btn-primary">Обновить диагноз ↓</button>
+            </div>
+          </form>
+        </details>
       </section>
 
       <!-- ДАШБОРД РЕЗУЛЬТАТОВ -->
