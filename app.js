@@ -1,8 +1,8 @@
-/* UI-контроллер КартаЧек */
+/* UI-контроллер КартаЧек v2 */
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'kartachek_state_v1';
+  const STORAGE_KEY = 'kartachek_state_v2';
   const $ = (id) => document.getElementById(id);
 
   function esc(str) {
@@ -25,7 +25,7 @@
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
   }
 
   async function copyText(text, successMsg) {
@@ -73,7 +73,7 @@
 
     document.title = `Оставить отзыв — ${data.n}`;
 
-    let mood = 'good'; // 'good' | 'issue'
+    let mood = 'good';
     const selectedTags = new Set([niche.reviewTags[0], niche.reviewTags[1]]);
     let customNote = '';
 
@@ -89,9 +89,7 @@
       } else {
         parts.push(`Остались очень довольны визитом в «${data.n}»!`);
       }
-      if (customNote.trim()) {
-        parts.push(customNote.trim());
-      }
+      if (customNote.trim()) parts.push(customNote.trim());
       parts.push('Смело рекомендуем!');
       return parts.join(' ');
     }
@@ -120,7 +118,7 @@
           </div>
 
           ${mood === 'good' ? `
-            <p class="hint">Нажмите 2–3 пункта, что понравилось — мы соберём черновик, который вы сможете поправить:</p>
+            <p class="hint">Нажмите 2–3 пункта, что понравилось — мы соберём черновик, который можно поправить:</p>
             <div class="tag-cloud">
               ${niche.reviewTags.map(t => `<button type="button" class="tag-btn ${selectedTags.has(t) ? 'selected' : ''}" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}
             </div>
@@ -142,9 +140,7 @@
             </div>
             ${contactLink ? `
               <a class="btn btn-dark" style="width:100%;margin-bottom:10px;" href="${esc(contactLink)}" target="_blank" rel="noopener">Написать руководителю напрямую ↗</a>
-            ` : `
-              <p class="hint" style="margin-bottom:10px;">Передайте замечание администратору точки — мы обязательно всё исправим.</p>
-            `}
+            ` : `<p class="hint" style="margin-bottom:10px;">Передайте замечание администратору точки — мы обязательно всё исправим.</p>`}
             ${(yandexLink || gisLink) ? `
               <p class="hint" style="text-align:center;margin-top:8px;">
                 Вы также в любой момент можете оставить публичный отзыв:
@@ -162,10 +158,7 @@
       `;
 
       root.querySelectorAll('[data-mood]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          mood = btn.getAttribute('data-mood');
-          renderHelper();
-        });
+        btn.addEventListener('click', () => { mood = btn.getAttribute('data-mood'); renderHelper(); });
       });
       root.querySelectorAll('[data-tag]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -203,7 +196,6 @@
     renderHelper();
   }
 
-  // Если открыта ссылка помощника — сразу переключаемся в него
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('review')) {
     initCustomerReviewMode(urlParams.get('review'));
@@ -213,9 +205,46 @@
   /* =====================================================================
    * РЕЖИМ 2: ОСНОВНОЕ ПРИЛОЖЕНИЕ КАРТАЧЕК
    * ===================================================================== */
+  function createBlankPoint(idx) {
+    return {
+      id: 'pt-' + Date.now(),
+      isDemo: false,
+      name: '',
+      niche: 'kids',
+      city: 'Москва',
+      district: '',
+      yandexUrl: '',
+      gisUrl: '',
+      siteUrl: '',
+      tgContact: '',
+      rating: 4.7,
+      reviewsCount: 15,
+      recentReviews30d: 1,
+      replyRate: 40,
+      photosCount: 20,
+      verified: false,
+      rubricMatchesLeaders: false,
+      servicesUpdated: false,
+      hasOnlineBooking: false,
+      hasNewsStories: false,
+      hasCompetitorAds: false,
+      hasDuplicates: false,
+      hasOwnerAccess: true,
+      has2gisSynced: false,
+      hasOtherDirs: false,
+      leaderRating: 5.0,
+      leaderReviews: 90,
+      avgCheck: 5000,
+      ltvMonths: 6,
+      monthlyDemand: 1000,
+      doneSteps: {}
+    };
+  }
+
   function defaultState() {
     const first = JSON.parse(JSON.stringify(KartaData.DEMO_PRESETS[0].point));
     first.id = 'pt-1';
+    first.isDemo = true;
     first.doneSteps = {};
     return {
       activePointId: 'pt-1',
@@ -223,14 +252,17 @@
       findingFilter: 'all',
       activeProTab: 'qr',
       qrMode: 'helper',
-      tentCta: 'Понравилось у нас? Поделитесь за 30 секунд!'
+      tentTheme: 'yellow',
+      tentCta: 'Понравилось у нас? Поделитесь за 30 секунд!',
+      shortScriptLink: true,
+      selectedFeedback: ''
     };
   }
 
   function loadState() {
     let st = defaultState();
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('kartachek_state_v1');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.points) && parsed.points.length) {
@@ -239,12 +271,12 @@
       }
     } catch (_) {}
 
-    // Проверяем #share=... (импорт отчёта по ссылке)
     if (window.location.hash && window.location.hash.startsWith('#share=')) {
       const payload = KartaEngine.decodePayload(window.location.hash.slice(7));
       if (payload && payload.name) {
         const id = 'pt-shared-' + Date.now();
         payload.id = id;
+        payload.isDemo = false;
         payload.doneSteps = payload.doneSteps || {};
         st.points.unshift(payload);
         st.activePointId = id;
@@ -258,39 +290,57 @@
   let state = loadState();
 
   function saveState() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (_) {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
   }
 
   function getActivePoint() {
     let pt = state.points.find(p => p.id === state.activePointId);
-    if (!pt) {
-      pt = state.points[0];
-      state.activePointId = pt.id;
-    }
+    if (!pt) { pt = state.points[0]; state.activePointId = pt.id; }
     if (!pt.doneSteps) pt.doneSteps = {};
     return pt;
   }
 
-  /* Заполняем список ниш и демо-кнопки */
+  function syncTapChipsVisual() {
+    document.querySelectorAll('.tap-chip').forEach(lbl => {
+      const cb = lbl.querySelector('input[type="checkbox"]');
+      if (cb) lbl.classList.toggle('checked', cb.checked);
+    });
+  }
+
+  function startOwnBlankPoint() {
+    const active = getActivePoint();
+    if (active.isDemo) {
+      const fresh = createBlankPoint(1);
+      fresh.id = active.id;
+      Object.assign(active, fresh);
+    } else {
+      const fresh = createBlankPoint(state.points.length + 1);
+      state.points.push(fresh);
+      state.activePointId = fresh.id;
+    }
+    saveState();
+    populateFormFromPoint(getActivePoint());
+    renderAll();
+    $('f-name').focus();
+    $('f-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('Форма очищена — введите название и ссылку вашей точки');
+  }
+
   function initStaticControls() {
-    const sel = $('f-niche');
-    sel.innerHTML = Object.values(KartaData.NICHES)
+    $('f-niche').innerHTML = Object.values(KartaData.NICHES)
       .map(n => `<option value="${esc(n.id)}">${esc(n.label)}</option>`)
       .join('');
 
-    const demoWrap = $('demo-buttons');
-    demoWrap.innerHTML = KartaData.DEMO_PRESETS
-      .map(d => `<button type="button" class="demo-btn" data-demo="${esc(d.id)}">${esc(d.label)}</button>`)
+    $('demo-buttons').innerHTML = KartaData.DEMO_PRESETS
+      .map(d => `<button type="button" class="demo-btn" data-demo="${esc(d.id)}">${esc(d.label.replace(/^Пример \d+: /, ''))}</button>`)
       .join('');
 
-    demoWrap.querySelectorAll('[data-demo]').forEach(btn => {
+    $('demo-buttons').querySelectorAll('[data-demo]').forEach(btn => {
       btn.addEventListener('click', () => {
         const preset = KartaData.DEMO_PRESETS.find(d => d.id === btn.getAttribute('data-demo'));
         if (!preset) return;
         const active = getActivePoint();
-        Object.assign(active, JSON.parse(JSON.stringify(preset.point)), { id: active.id, doneSteps: {} });
+        Object.assign(active, JSON.parse(JSON.stringify(preset.point)), { id: active.id, isDemo: true, doneSteps: {} });
         saveState();
         populateFormFromPoint(active);
         renderAll();
@@ -326,12 +376,14 @@
     $('c-dirs').checked = !!pt.hasOtherDirs;
     $('c-comp-ads').checked = !!pt.hasCompetitorAds;
     $('c-dupes').checked = !!pt.hasDuplicates;
+    syncTapChipsVisual();
   }
 
   function syncPointFromForm() {
     const pt = getActivePoint();
     const niche = KartaData.NICHES[$('f-niche').value] || KartaData.NICHES.other;
-    pt.name = $('f-name').value.trim() || 'Моя точка';
+    pt.isDemo = false;
+    pt.name = $('f-name').value.trim();
     pt.niche = niche.id;
     pt.city = $('f-city').value.trim() || 'Москва';
     pt.district = $('f-district').value.trim();
@@ -357,15 +409,15 @@
     pt.hasOtherDirs = $('c-dirs').checked;
     pt.hasCompetitorAds = $('c-comp-ads').checked;
     pt.hasDuplicates = $('c-dupes').checked;
+    syncTapChipsVisual();
     saveState();
     return pt;
   }
 
-  /* Рендер панели сохранённых точек */
   function renderPointsBar() {
     const wrap = $('points-bar');
     const chips = state.points.map(pt => {
-      const a = KartaEngine.runCardAudit(pt);
+      const a = KartaEngine.runCardAudit(Object.assign({}, pt, { name: pt.name || 'Моя точка' }));
       const isAct = pt.id === state.activePointId;
       return `
         <div class="point-chip ${isAct ? 'active' : ''}" data-select-pt="${esc(pt.id)}" role="button" tabindex="0">
@@ -377,7 +429,7 @@
     }).join('');
 
     const countNote = state.points.length >= 3
-      ? `<span class="hint">Бесплатный лимит: 3 точки · доп. точки открыты в PRO-тесте</span>`
+      ? `<span class="hint">Бесплатно: 3 точки · доп. точки открыты в PRO-тесте</span>`
       : `<span class="hint">Точек: ${state.points.length} / 3 бесплатно</span>`;
 
     wrap.innerHTML = `${chips}<button type="button" class="add-point-btn" id="btn-add-point">+ Добавить точку</button>${countNote}`;
@@ -406,86 +458,49 @@
     });
 
     $('btn-add-point').addEventListener('click', () => {
-      const id = 'pt-' + Date.now();
-      const newPt = {
-        id,
-        name: `Точка #${state.points.length + 1}`,
-        niche: 'kids',
-        city: 'Москва',
-        district: '',
-        yandexUrl: '',
-        gisUrl: '',
-        siteUrl: '',
-        tgContact: '',
-        rating: 4.5,
-        reviewsCount: 5,
-        recentReviews30d: 0,
-        replyRate: 0,
-        photosCount: 10,
-        verified: false,
-        rubricMatchesLeaders: false,
-        servicesUpdated: false,
-        hasOnlineBooking: false,
-        hasNewsStories: false,
-        hasCompetitorAds: false,
-        hasDuplicates: false,
-        hasOwnerAccess: true,
-        has2gisSynced: false,
-        hasOtherDirs: false,
-        leaderRating: 5.0,
-        leaderReviews: 90,
-        avgCheck: 5000,
-        ltvMonths: 6,
-        monthlyDemand: 1000,
-        doneSteps: {}
-      };
-      state.points.push(newPt);
-      state.activePointId = id;
+      const fresh = createBlankPoint(state.points.length + 1);
+      state.points.push(fresh);
+      state.activePointId = fresh.id;
       saveState();
-      populateFormFromPoint(newPt);
+      populateFormFromPoint(fresh);
       renderAll();
       $('f-name').focus();
-      $('f-name').select();
     });
   }
 
-  /* Главный рендер всех секций */
   function renderAll() {
     const pt = getActivePoint();
-    const audit = KartaEngine.runCardAudit(pt);
+    const safePt = Object.assign({}, pt, { name: pt.name || 'Моя точка' });
+    const audit = KartaEngine.runCardAudit(safePt);
 
-    // URL hints
+    $('demo-banner').classList.toggle('hidden', !pt.isDemo);
+
     $('yandex-url-hint').textContent = audit.urls.yandexOrgId
       ? `✓ Найден ID ${audit.urls.yandexOrgId} — прямая ссылка на отзыв готова`
-      : 'Вставьте полную ссылку из адресной строки браузера (/maps/org/.../ID/)';
+      : 'Вставьте ссылку из браузера (/maps/org/.../ID/)';
     $('gis-url-hint').textContent = audit.urls.gisFirmId
       ? `✓ Найден 2ГИС ID ${audit.urls.gisFirmId} — ссылка на отзыв готова`
-      : 'Для QR-стенда и синхронизации площадок';
+      : 'Для QR-стенда и отзывов 2ГИС';
 
     renderPointsBar();
 
-    // Score hero
-    $('res-point-title').textContent = pt.name + (pt.district ? ` · ${pt.district}` : '');
+    $('res-point-title').textContent = safePt.name + (safePt.district ? ` · ${safePt.district}` : '');
     $('res-score').textContent = audit.totalScore;
     const badge = $('res-status-badge');
     badge.textContent = audit.status.label;
     badge.className = 'status-badge ' + audit.status.code;
     $('res-summary').textContent = audit.status.summary;
 
-    // SVG gauge (circumference = 2*pi*50 = 314.16)
     const arc = $('gauge-arc');
-    const offset = 314.16 * (1 - audit.totalScore / 100);
-    arc.style.strokeDashoffset = offset.toFixed(1);
+    arc.style.strokeDashoffset = (314.16 * (1 - audit.totalScore / 100)).toFixed(1);
     arc.style.stroke = audit.status.code === 'good' ? '#15803D' : audit.status.code === 'mid' ? '#D97706' : '#E53935';
 
-    // Traffic counts
     $('res-traffic-counts').innerHTML = `
       <span class="t-pill red">● ${audit.counts.red} критично</span>
       <span class="t-pill yellow">● ${audit.counts.yellow} улучшить</span>
       <span class="t-pill green">● ${audit.counts.green} ок</span>
     `;
 
-    // Pillars
     $('res-pillars').innerHTML = audit.pillars.map(pl => {
       const pct = Math.round((pl.score / pl.max) * 100);
       const cls = pct >= 75 ? 'good' : pct >= 45 ? 'mid' : 'bad';
@@ -498,7 +513,6 @@
       `;
     }).join('');
 
-    // Findings
     const filtered = state.findingFilter === 'all'
       ? audit.findings
       : audit.findings.filter(f => f.level === state.findingFilter);
@@ -525,14 +539,17 @@
       ? 'По числу отзывов вы на уровне или выше ориентира лидера района — удерживайте свежесть!'
       : `Чтобы догнать лидера (${c.leaderReviews} отзывов), нужен стабильный белый поток ~${c.recommendedPace} отзывов в месяц без накруток.`;
     $('comp-stats').innerHTML = `
-      <div class="stat-box"><span class="k">Ваши отзывы</span><span class="v">${pt.reviewsCount}</span></div>
+      <div class="stat-box"><span class="k">Ваши отзывы</span><span class="v">${safePt.reviewsCount}</span></div>
       <div class="stat-box"><span class="k">Лидер района</span><span class="v">${c.leaderReviews}</span></div>
       <div class="stat-box highlight"><span class="k">Разрыв</span><span class="v">−${c.reviewGap}</span></div>
       <div class="stat-box"><span class="k">Срок догона</span><span class="v">${c.monthsToCatch ? c.monthsToCatch + ' мес' : 'Вы в топе'}</span></div>
     `;
 
-    // ROI loss
+    // Interactive ROI
     const r = audit.roi;
+    const slider = $('roi-check-slider');
+    slider.value = Math.min(25000, Math.max(500, r.avgCheck));
+    $('roi-check-label').textContent = fmtRub(r.avgCheck);
     $('roi-stats').innerHTML = `
       <div class="stat-box"><span class="k">Упущено обращений/мес</span><span class="v">~${r.missedLeadsMonth}</span></div>
       <div class="stat-box"><span class="k">Упущено клиентов/мес</span><span class="v">~${r.missedClientsMonth}</span></div>
@@ -540,35 +557,25 @@
       <div class="stat-box"><span class="k">Потеря с учётом LTV</span><span class="v">${fmtRub(r.missedLtvRev)}</span></div>
     `;
 
-    // PRO 1: QR Studio & Scripts
-    renderQrStudio(pt, audit);
+    renderQrStudio(safePt, audit);
 
-    // PRO 2: Replies & Appeal
     if (!$('rep-kw').value && audit.niche.seoKeywords[0]) {
       $('rep-kw').placeholder = audit.niche.seoKeywords[0];
     }
-    $('appeal-text').textContent = KartaEngine.generateAppealTemplate(pt.name, '[дата и имя автора]');
-    if (!$('replies-output').innerHTML) renderReplies(pt, audit);
+    $('appeal-text').textContent = KartaEngine.generateAppealTemplate(safePt.name, '[дата и имя автора]');
+    if (!$('replies-output').innerHTML) renderReplies(safePt, audit);
 
-    // PRO 3: Title compliance, UTM, 14-day plan
-    renderProTools(pt, audit);
-
-    // PRO 4: Compare table
+    renderProTools(safePt, audit);
     renderCompareTable();
   }
 
   function getQrTargetUrl(pt, audit) {
-    const mode = state.qrMode;
     const basePage = window.location.origin === 'null' || window.location.protocol === 'file:'
       ? 'https://sooqka77.github.io/kartachek/'
       : (window.location.origin + window.location.pathname);
 
-    if (mode === 'yandex') {
-      return audit.urls.yandexDirectReviewUrl || 'https://yandex.ru/maps/';
-    }
-    if (mode === 'gis') {
-      return audit.urls.gisDirectReviewUrl || 'https://2gis.ru/';
-    }
+    if (state.qrMode === 'yandex') return audit.urls.yandexDirectReviewUrl || 'https://yandex.ru/maps/';
+    if (state.qrMode === 'gis') return audit.urls.gisDirectReviewUrl || 'https://2gis.ru/';
     return KartaEngine.buildReviewHelperUrl(basePage, pt);
   }
 
@@ -578,20 +585,30 @@
     $('tent-biz-name').textContent = pt.name || 'Ваша точка';
     $('tent-cta-preview').textContent = state.tentCta;
 
+    const tentEl = $('tent-preview');
+    tentEl.className = 'tent-preview theme-' + (state.tentTheme || 'yellow');
+    $('tent-themes').querySelectorAll('[data-tent-theme]').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-tent-theme') === (state.tentTheme || 'yellow'));
+    });
+
     try {
-      $('tent-qr-svg').innerHTML = KartaQR.toSVG(targetUrl, { sizePx: 200, quietZone: 4 });
+      $('tent-qr-svg').innerHTML = KartaQR.toSVG(targetUrl, { sizePx: 196, quietZone: 4 });
     } catch (e) {
       $('tent-qr-svg').innerHTML = `<p class="hint" style="color:var(--pin);padding:16px;">${esc(e.message)}</p>`;
     }
 
-    const shortLink = targetUrl;
+    // Короткая ссылка для мессенджеров (чтобы не слать клиенту 240-символьную строку)
+    const chatLink = (state.shortScriptLink && audit.urls.yandexDirectReviewUrl)
+      ? audit.urls.yandexDirectReviewUrl
+      : targetUrl;
+
     const scripts = [
       { title: '1. Вслух на ресепшене / после визита', text: audit.niche.scripts.live },
       { title: '2. Сообщение в WhatsApp / Telegram через 2 часа', text: audit.niche.scripts.messenger },
       { title: '3. Пост в общий чат клиентов / родителей', text: audit.niche.scripts.chat }
     ].map(s => ({
       title: s.title,
-      text: s.text.replace(/\[Название\]/g, pt.name || 'нашу точку').replace(/\[ССЫЛКА\]/g, shortLink)
+      text: s.text.replace(/\[Название\]/g, pt.name || 'нашу точку').replace(/\[ССЫЛКА\]/g, chatLink)
     }));
 
     $('scripts-container').innerHTML = scripts.map((s, i) => `
@@ -643,13 +660,15 @@
   }
 
   function renderProTools(pt, audit) {
-    // Title check
+    // Прайс-шаблон под нишу
+    const svcs = (audit.niche.serviceTemplates || []).map((s, i) => `${i + 1}. ${s}`).join('\n');
+    $('services-template-text').textContent = svcs;
+
     const tc = audit.titleCheck;
     $('title-compliance-box').innerHTML = tc.ok
-      ? `<div class="finding green" style="grid-template-columns:1fr;"><div><h4>✓ Название «${esc(pt.name)}» безопасно</h4><p class="f-why">Соответствует правилам Яндекс Бизнеса и 2ГИС — нет переспама, CAPS LOCK и запрещённых слов.</p></div></div>`
-      : `<div class="finding red" style="grid-template-columns:1fr;"><div><h4>⚠ Есть риск отката/блокировки правок</h4><ul style="margin:6px 0;padding-left:18px;font-size:13px;">${tc.issues.map(i => `<li>${esc(i)}</li>`).join('')}</ul><div class="f-fix"><b>Безопасный вариант:</b> ${esc(tc.cleanSuggestion)}</div></div></div>`;
+      ? `<div class="finding green" style="grid-template-columns:1fr;"><div><h4>✓ Название «${esc(pt.name)}» безопасно</h4><p class="f-why">Соответствует правилам Яндекс Бизнеса и 2ГИС.</p></div></div>`
+      : `<div class="finding red" style="grid-template-columns:1fr;"><div><h4>⚠ Есть риск блокировки правок</h4><ul style="margin:6px 0;padding-left:18px;font-size:13px;">${tc.issues.map(i => `<li>${esc(i)}</li>`).join('')}</ul><div class="f-fix"><b>Безопасный вариант:</b> ${esc(tc.cleanSuggestion)}</div></div></div>`;
 
-    // UTM links
     const utms = KartaEngine.buildUtmLinks(pt.siteUrl);
     $('utm-output').innerHTML = utms.length
       ? utms.map((u, idx) => `
@@ -661,7 +680,7 @@
             <div class="mono" style="font-size:11.5px;word-break:break-all;color:var(--muted);">${esc(u.url)}</div>
           </div>
         `).join('')
-      : `<p class="hint">Укажите ссылку на ваш сайт в форме выше — здесь сразу появятся готовые UTM-ссылки для Яндекс Карт, 2ГИС и QR-стенда.</p>`;
+      : `<p class="hint">Укажите сайт в «Точном аудите» выше — здесь появятся готовые UTM-ссылки.</p>`;
 
     $('utm-output').querySelectorAll('[data-copy-utm]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -670,8 +689,8 @@
       });
     });
 
-    // 14-day plan
-    const doneMap = pt.doneSteps || {};
+    const activeReal = getActivePoint();
+    const doneMap = activeReal.doneSteps || {};
     $('plan-14-list').innerHTML = audit.plan14.map(step => {
       const done = !!doneMap[step.id];
       return `
@@ -688,7 +707,7 @@
 
     $('plan-14-list').querySelectorAll('[data-plan-step]').forEach(cb => {
       cb.addEventListener('change', () => {
-        pt.doneSteps[cb.getAttribute('data-plan-step')] = cb.checked;
+        activeReal.doneSteps[cb.getAttribute('data-plan-step')] = cb.checked;
         saveState();
         renderProTools(pt, audit);
       });
@@ -697,15 +716,16 @@
 
   function renderCompareTable() {
     const rows = state.points.map(pt => {
-      const a = KartaEngine.runCardAudit(pt);
+      const safe = Object.assign({}, pt, { name: pt.name || 'Новая точка' });
+      const a = KartaEngine.runCardAudit(safe);
       const cls = a.status.code === 'good' ? 'green' : a.status.code === 'mid' ? 'yellow' : 'red';
       return `
         <tr>
-          <td><b>${esc(pt.name)}</b><br><span class="hint">${esc(pt.district || pt.city || '')}</span></td>
+          <td><b>${esc(safe.name)}</b><br><span class="hint">${esc(safe.district || safe.city || '')}</span></td>
           <td class="mono"><span class="t-pill ${cls}">${a.totalScore}/100</span></td>
-          <td class="mono">${(pt.rating || 0).toFixed(1)}</td>
-          <td class="mono">${pt.reviewsCount} (+${pt.recentReviews30d}/мес)</td>
-          <td class="mono">${pt.photosCount}</td>
+          <td class="mono">${(safe.rating || 0).toFixed(1)}</td>
+          <td class="mono">${safe.reviewsCount} (+${safe.recentReviews30d}/мес)</td>
+          <td class="mono">${safe.photosCount}</td>
           <td class="mono">${a.counts.red} дыр</td>
           <td class="mono">${fmtRub(a.roi.missedFirstMonthRev)}/мес</td>
         </tr>
@@ -722,30 +742,19 @@
     `;
   }
 
-  /* =====================================================================
-   * СОБЫТИЯ
-   * ===================================================================== */
   function bindEvents() {
-    // Режимы ввода (Быстрый vs Вставка Ctrl+A)
-    document.querySelectorAll('[data-input-mode]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const mode = btn.getAttribute('data-input-mode');
-        document.querySelectorAll('[data-input-mode]').forEach(b => b.classList.toggle('active', b === btn));
-        $('pane-paste').classList.toggle('hidden', mode !== 'paste');
-      });
-    });
+    $('btn-start-own').addEventListener('click', startOwnBlankPoint);
+    $('btn-clear-demo').addEventListener('click', startOwnBlankPoint);
 
-    // Парсер вставленной карточки
     $('btn-parse-paste').addEventListener('click', () => {
-      const raw = $('smart-paste-input').value;
-      const parsed = KartaEngine.parsePastedCardText(raw);
+      const parsed = KartaEngine.parsePastedCardText($('smart-paste-input').value);
       const sigWrap = $('paste-signals');
       if (!parsed.detected) {
-        sigWrap.innerHTML = `<span class="sig-chip warn">Недостаточно данных — выделите всю страницу карточки (Ctrl+A → Ctrl+C) и вставьте целиком.</span>`;
+        sigWrap.innerHTML = `<span class="sig-chip warn">Недостаточно данных — выделите всю страницу карточки (Ctrl/Cmd+A → C) и вставьте целиком.</span>`;
         return;
       }
       const pt = getActivePoint();
-      Object.assign(pt, parsed.patch);
+      Object.assign(pt, parsed.patch, { isDemo: false });
       saveState();
       populateFormFromPoint(pt);
       renderAll();
@@ -760,24 +769,26 @@
       $('paste-signals').innerHTML = '';
     });
 
-    // Форма: пересчёт в реальном времени и по сабмиту
-    $('audit-form').addEventListener('input', () => {
-      syncPointFromForm();
-      renderAll();
-    });
-    $('audit-form').addEventListener('change', () => {
-      syncPointFromForm();
-      renderAll();
-    });
+    $('audit-form').addEventListener('input', () => { syncPointFromForm(); renderAll(); });
+    $('audit-form').addEventListener('change', () => { syncPointFromForm(); renderAll(); });
     $('audit-form').addEventListener('submit', (e) => {
       e.preventDefault();
       syncPointFromForm();
       renderAll();
       $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      showToast('Диагностика обновлена');
+      showToast('Диагноз обновлён');
     });
 
-    // Открыть живую выдачу района на Яндекс Картах
+    // Интерактивный ползунок среднего чека в блоке ROI
+    $('roi-check-slider').addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10) || 5000;
+      const pt = getActivePoint();
+      pt.avgCheck = val;
+      $('f-check').value = val;
+      saveState();
+      renderAll();
+    });
+
     $('btn-open-yandex-serp').addEventListener('click', () => {
       const pt = getActivePoint();
       const niche = KartaData.NICHES[pt.niche] || KartaData.NICHES.other;
@@ -785,22 +796,18 @@
       window.open(`https://yandex.ru/maps/?text=${encodeURIComponent(q)}`, '_blank', 'noopener');
     });
 
-    // Поделиться отчётом ссылкой
     $('btn-share-report').addEventListener('click', () => {
       const pt = Object.assign({}, getActivePoint());
       delete pt.id;
       const base = window.location.origin + window.location.pathname;
-      const shareUrl = `${base}#share=${KartaEngine.encodePayload(pt)}`;
-      copyText(shareUrl, 'Ссылка на отчёт скопирована — можно скинуть в Telegram!');
+      copyText(`${base}#share=${KartaEngine.encodePayload(pt)}`, 'Ссылка на отчёт скопирована!');
     });
 
-    // Печать / PDF
     $('btn-print-report').addEventListener('click', () => {
       document.body.classList.remove('print-tent-only');
       window.print();
     });
 
-    // Фильтры находок
     $('findings-filters').querySelectorAll('[data-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
         state.findingFilter = btn.getAttribute('data-filter');
@@ -809,7 +816,6 @@
       });
     });
 
-    // PRO вкладки
     $('pro-tabs').querySelectorAll('[data-pro-tab]').forEach(btn => {
       btn.addEventListener('click', () => {
         const tab = btn.getAttribute('data-pro-tab');
@@ -819,45 +825,46 @@
       });
     });
 
-    // Paywall preview toggle
     $('paywall-toggle').addEventListener('change', (e) => {
       $('pro-body').classList.toggle('paywall-locked', e.target.checked);
     });
     $('btn-unlock-test').addEventListener('click', () => {
       $('paywall-toggle').checked = false;
       $('pro-body').classList.remove('paywall-locked');
-      showToast('PRO-доступ открыт бесплатно на время теста');
+      showToast('PRO-доступ открыт бесплатно на тест');
     });
 
     // QR studio controls
-    $('qr-mode').addEventListener('change', (e) => {
-      state.qrMode = e.target.value;
-      saveState();
-      renderAll();
+    $('qr-mode').addEventListener('change', (e) => { state.qrMode = e.target.value; saveState(); renderAll(); });
+    $('tent-cta').addEventListener('input', (e) => { state.tentCta = e.target.value; saveState(); $('tent-cta-preview').textContent = state.tentCta; });
+    $('c-short-script-link').addEventListener('change', (e) => { state.shortScriptLink = e.target.checked; saveState(); renderAll(); });
+
+    $('tent-themes').querySelectorAll('[data-tent-theme]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.tentTheme = btn.getAttribute('data-tent-theme');
+        saveState();
+        renderAll();
+      });
     });
-    $('tent-cta').addEventListener('input', (e) => {
-      state.tentCta = e.target.value;
-      saveState();
-      $('tent-cta-preview').textContent = state.tentCta;
-    });
-    $('btn-copy-qr-url').addEventListener('click', () => {
-      copyText($('qr-target-url').textContent, 'Ссылка скопирована!');
+
+    $('btn-copy-qr-url').addEventListener('click', () => copyText($('qr-target-url').textContent, 'Ссылка скопирована!'));
+    $('btn-shorten-clck').addEventListener('click', () => {
+      const target = $('qr-target-url').textContent;
+      copyText(target, 'Ссылка скопирована — открываем clck.ru!');
+      window.open(`https://clck.ru/?url=${encodeURIComponent(target)}`, '_blank', 'noopener');
     });
     $('btn-open-helper-preview').addEventListener('click', () => {
-      const pt = getActivePoint();
-      const audit = KartaEngine.runCardAudit(pt);
-      const url = getQrTargetUrl(pt, audit);
+      const pt = Object.assign({}, getActivePoint(), { name: getActivePoint().name || 'Моя точка' });
+      const url = getQrTargetUrl(pt, KartaEngine.runCardAudit(pt));
       if (window.location.protocol === 'file:' && state.qrMode === 'helper') {
-        const localUrl = KartaEngine.buildReviewHelperUrl(window.location.href, pt);
-        window.open(localUrl, '_blank', 'noopener');
+        window.open(KartaEngine.buildReviewHelperUrl(window.location.href, pt), '_blank', 'noopener');
       } else {
         window.open(url, '_blank', 'noopener');
       }
     });
     $('btn-download-qr-png').addEventListener('click', () => {
-      const url = $('qr-target-url').textContent;
       const canvas = document.createElement('canvas');
-      KartaQR.drawToCanvas(canvas, url, { scale: 12, quietZone: 4 });
+      KartaQR.drawToCanvas(canvas, $('qr-target-url').textContent, { scale: 12, quietZone: 4 });
       const a = document.createElement('a');
       a.download = `qr-${(getActivePoint().name || 'tochka').toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-')}.png`;
       a.href = canvas.toDataURL('image/png');
@@ -869,32 +876,33 @@
       slot.innerHTML = $('tent-preview').outerHTML;
       document.body.classList.add('print-tent-only');
       window.print();
-      setTimeout(() => {
-        document.body.classList.remove('print-tent-only');
-        slot.innerHTML = '';
-      }, 300);
+      setTimeout(() => { document.body.classList.remove('print-tent-only'); slot.innerHTML = ''; }, 300);
     });
 
-    // SEO Replies
+    // PRO 2 & 3
     $('btn-gen-replies').addEventListener('click', () => {
-      const pt = getActivePoint();
-      renderReplies(pt, KartaEngine.runCardAudit(pt));
+      const safe = Object.assign({}, getActivePoint(), { name: getActivePoint().name || 'Моя точка' });
+      renderReplies(safe, KartaEngine.runCardAudit(safe));
       showToast('Готово 3 варианта SEO-ответа');
     });
-    $('btn-copy-appeal').addEventListener('click', () => {
-      copyText($('appeal-text').textContent, 'Шаблон жалобы скопирован!');
-    });
+    $('btn-copy-appeal').addEventListener('click', () => copyText($('appeal-text').textContent, 'Шаблон жалобы скопирован!'));
+    $('btn-copy-services').addEventListener('click', () => copyText($('services-template-text').textContent, 'Список услуг скопирован!'));
 
-    // Test feedback buttons
-    document.querySelectorAll('[data-fb]').forEach(btn => {
+    // Feedback decision block
+    $('fb-choices').querySelectorAll('[data-fb]').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-fb]').forEach(b => b.classList.remove('picked'));
+        $('fb-choices').querySelectorAll('[data-fb]').forEach(b => b.classList.remove('picked'));
         btn.classList.add('picked');
-        const pt = getActivePoint();
-        const a = KartaEngine.runCardAudit(pt);
-        const msg = `Тест КартаЧек (${pt.name}, скор ${a.totalScore}/100): ${btn.getAttribute('data-fb')}`;
-        copyText(msg, 'Текст оценки скопирован — вставьте в Telegram!');
+        state.selectedFeedback = btn.getAttribute('data-fb');
       });
+    });
+    $('btn-copy-feedback').addEventListener('click', () => {
+      const pt = Object.assign({}, getActivePoint(), { name: getActivePoint().name || 'Моя точка' });
+      const a = KartaEngine.runCardAudit(pt);
+      const verdict = state.selectedFeedback || 'Протестировал КартаЧек';
+      const comment = ($('fb-comment').value || '').trim();
+      const msg = `Тест КартаЧек (${pt.name}, индекс ${a.totalScore}/100): ${verdict}${comment ? ' | Комментарий: ' + comment : ''}`;
+      copyText(msg, 'Вердикт скопирован — вставьте в Telegram!');
     });
   }
 
@@ -902,6 +910,7 @@
   populateFormFromPoint(getActivePoint());
   $('qr-mode').value = state.qrMode || 'helper';
   $('tent-cta').value = state.tentCta || 'Понравилось у нас? Поделитесь за 30 секунд!';
+  $('c-short-script-link').checked = state.shortScriptLink !== false;
   bindEvents();
   renderAll();
 })();
