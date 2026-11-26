@@ -100,6 +100,7 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button type="button" class="btn btn-primary" id="btn-paste-clipboard">📋 Вставить из буфера и проверить</button>
               <button type="button" class="btn btn-dark btn-sm" id="btn-parse-paste">Распознать вставленный текст</button>
+              <button type="button" class="btn btn-outline btn-sm hidden" id="btn-server-lookup">⚡ Автопроверка 2ГИС и сайта</button>
               <button type="button" class="btn btn-outline btn-sm" id="btn-clear-paste">Очистить</button>
             </div>
             <button type="button" class="btn btn-outline btn-sm" id="btn-toggle-manual">✎ Ввести вручную (с телефона)</button>
@@ -472,10 +473,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script>
-    // Конфиг для подключения сервера (Этап 2) и Яндекс Метрики
-    window.KARTA_CONFIG = { backendUrl: '', metrikaId: null };
-  </script>
+  <script src="config.js"></script>
   <script src="qr.js"></script>
   <script src="data.js"></script>
   <script src="engine.js"></script>

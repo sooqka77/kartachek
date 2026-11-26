@@ -927,13 +927,110 @@
     });
 
     // PRO 2 & 3
-    $('btn-gen-replies').addEventListener('click', () => {
+    $('btn-gen-replies').addEventListener('click', async () => {
       const safe = Object.assign({}, getActivePoint(), { name: getActivePoint().name || 'Моя точка' });
-      renderReplies(safe, KartaEngine.runCardAudit(safe));
+      const audit = KartaEngine.runCardAudit(safe);
+      const api = getBackendUrl();
+      const reviewText = $('rep-text').value.trim();
+      if (api && reviewText.length >= 5) {
+        const btn = $('btn-gen-replies');
+        btn.disabled = true;
+        btn.textContent = 'Генерируем живой ИИ-ответ...';
+        try {
+          const r = await fetch(`${api}/api/reviews/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              reviewText,
+              clientName: $('rep-client').value,
+              tone: $('rep-tone').value,
+              businessName: safe.name,
+              serviceKeyword: $('rep-kw').value || audit.niche.seoKeywords[0],
+              district: safe.district
+            })
+          });
+          const data = await r.json();
+          if (r.ok && data.ok && Array.isArray(data.variants)) {
+            $('replies-output').innerHTML = `<p class="hint" style="margin-bottom:8px;">✨ Живые ИИ-ответы (<b>${esc(data.provider)}</b>${data.leftToday != null ? ` · осталось сегодня: ${data.leftToday}` : ''})</p>` +
+              data.variants.map((v, idx) => `
+                <div class="copy-block">
+                  <div class="copy-block-head">
+                    <strong>Вариант ${idx + 1}: ${esc(v.style || 'Живой ответ')}</strong>
+                    <button type="button" class="btn btn-outline btn-sm" data-copy-ai-reply="${idx}">Копировать</button>
+                  </div>
+                  <div class="copy-text">${esc(v.text)}</div>
+                </div>
+              `).join('');
+            $('replies-output').querySelectorAll('[data-copy-ai-reply]').forEach(b => {
+              b.addEventListener('click', () => copyText(data.variants[Number(b.getAttribute('data-copy-ai-reply'))].text, 'Ответ скопирован!'));
+            });
+            showToast('Готово 3 живых ИИ-ответа!');
+            btn.disabled = false;
+            btn.textContent = 'Сгенерировать 3 варианта ответа';
+            return;
+          }
+        } catch (_) {}
+        btn.disabled = false;
+        btn.textContent = 'Сгенерировать 3 варианта ответа';
+      }
+      renderReplies(safe, audit);
       showToast('Готово 3 варианта SEO-ответа');
     });
     $('btn-copy-appeal').addEventListener('click', () => copyText($('appeal-text').textContent, 'Шаблон жалобы скопирован!'));
     $('btn-copy-services').addEventListener('click', () => copyText($('services-template-text').textContent, 'Список услуг скопирован!'));
+
+    // Подключение к geo-api (если задан backendUrl в config.js или ?api=...)
+    const backendUrl = getBackendUrl();
+    if (backendUrl) {
+      $('btn-server-lookup').classList.remove('hidden');
+      trackEvent('page_view');
+      $('btn-server-lookup').addEventListener('click', async () => {
+        const pt = getActivePoint();
+        const btn = $('btn-server-lookup');
+        if (!pt.name && !pt.siteUrl) {
+          $('manual-drawer').open = true;
+          $('f-name').focus();
+          showToast('Укажите название точки или сайт для автопроверки');
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Проверяем 2ГИС и сайт...';
+        try {
+          const r = await fetch(`${backendUrl}/api/geo/lookup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: pt.name, city: pt.city, siteUrl: pt.siteUrl })
+          });
+          const data = await r.json();
+          const chips = [];
+          if (data.twogis) {
+            pt.has2gisSynced = true;
+            if (data.twogis.gisUrl && !pt.gisUrl) pt.gisUrl = data.twogis.gisUrl;
+            if (data.twogis.address && !pt.district) pt.district = data.twogis.address;
+            chips.push(`✓ 2ГИС: рейтинг ${data.twogis.rating || '—'}, отзывов ${data.twogis.reviewsCount ?? '—'}`);
+          }
+          if (data.siteReport) {
+            const sr = data.siteReport;
+            chips.push(sr.https ? `✓ Сайт HTTPS (${sr.elapsedMs} мс)` : '⚠ Сайт без HTTPS');
+            chips.push(sr.schema?.hasLocalBusiness ? '✓ Schema.org LocalBusiness есть' : '⚠ Нет Schema.org на сайте');
+            if (sr.links?.yandexUrl && !pt.yandexUrl) { pt.yandexUrl = sr.links.yandexUrl; chips.push('✓ Найдена ссылка на Яндекс Карты'); }
+            if (sr.links?.gisUrl && !pt.gisUrl) { pt.gisUrl = sr.links.gisUrl; chips.push('✓ Найдена ссылка на 2ГИС'); }
+            if (sr.links?.tgUrl && !pt.tgContact) { pt.tgContact = sr.links.tgUrl; }
+          }
+          if (!chips.length) chips.push('⚠ По 2ГИС/сайту ничего не найдено — уточните название или сайт');
+          pt.isDemo = false;
+          saveState();
+          populateFormFromPoint(pt);
+          renderAll();
+          $('paste-signals').innerHTML = chips.map(s => `<span class="sig-chip ${s.startsWith('⚠') ? 'warn' : ''}">${esc(s)}</span>`).join('');
+          showToast('Автопроверка завершена!');
+        } catch (_) {
+          showToast('Сервер недоступен — проверьте соединение');
+        }
+        btn.disabled = false;
+        btn.textContent = '⚡ Автопроверка 2ГИС и сайта';
+      });
+    }
 
     // Feedback decision block
     $('fb-choices').querySelectorAll('[data-fb]').forEach(btn => {
@@ -948,9 +1045,27 @@
       const a = KartaEngine.runCardAudit(pt);
       const verdict = state.selectedFeedback || 'Протестировал КартаЧек';
       const comment = ($('fb-comment').value || '').trim();
+      trackEvent('verdict', { verdict, comment, score: a.totalScore });
       const msg = `Тест КартаЧек (${pt.name}, индекс ${a.totalScore}/100): ${verdict}${comment ? ' | Комментарий: ' + comment : ''}`;
       copyText(msg, 'Вердикт скопирован — вставьте в Telegram!');
     });
+  }
+
+  function getBackendUrl() {
+    return (window.KARTA_CONFIG && window.KARTA_CONFIG.backendUrl) ? window.KARTA_CONFIG.backendUrl.replace(/\/+$/, '') : '';
+  }
+
+  function trackEvent(event, meta) {
+    const api = getBackendUrl();
+    if (!api) return;
+    try {
+      fetch(`${api}/api/telemetry/event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ app: 'kartachek', event, meta: meta || {} }),
+        keepalive: true
+      }).catch(() => {});
+    } catch (_) {}
   }
 
   initStaticControls();
