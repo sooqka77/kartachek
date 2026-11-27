@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>КартаЧек — чекер карточек Яндекс Карт, 2ГИС и конвейер отзывов</title>
-  <meta name="description" content="Бесплатная проверка карточки офлайн-точки на Яндекс Картах и 2ГИС за 30 секунд: индекс здоровья, дыры в выдаче, QR-стенд для белых отзывов и SEO-ответы.">
-  <meta property="og:title" content="КартаЧек — рентген вашей точки на Яндекс Картах и 2ГИС">
+  <title>CheckGeo — аудит карточек Яндекс Карт, 2ГИС, Zoon, Отзовик и QR-конвейер отзывов</title>
+  <meta name="description" content="Бесплатная проверка карточки офлайн-точки на Яндекс Картах, 2ГИС, Zoon и Отзовик.ру за 30 секунд: индекс здоровья, потери выручки, QR-помощник отзывов и SEO-ответы.">
+  <meta property="og:title" content="CheckGeo — рентген вашей точки на Яндекс Картах, 2ГИС и отзовиках">
   <meta property="og:description" content="Проверьте здоровье карточки за 30 секунд, найдите утечки клиентов и соберите QR-стенд для белых отзывов.">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -23,21 +23,25 @@
       <div class="wrap topbar-inner">
         <a class="brand" href="./">
           <span class="brand-mark" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.63 7.5 12.5 7.5 12.5s7.5-6.87 7.5-12.5C19.5 5.36 16.14 2 12 2z" fill="#E53935"/>
-              <circle cx="12" cy="9.5" r="3" fill="#FFFFFF"/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.63 7.5 12.5 7.5 12.5s7.5-6.87 7.5-12.5C19.5 5.36 16.14 2 12 2z" fill="#FACC15"/>
+              <circle cx="12" cy="9.5" r="3" fill="#111315"/>
             </svg>
           </span>
           <span>
-            <span class="brand-name">КартаЧек</span>
-            <span class="brand-sub">Яндекс Карты · 2ГИС · Отзовики</span>
+            <span class="brand-name">CheckGeo</span>
+            <span class="brand-sub">checkgeo.ru · Яндекс Карты · 2ГИС · Отзовики</span>
           </span>
         </a>
         <div class="topbar-right">
-          <span class="pill pill-test">● Тест: PRO открыт бесплатно</span>
-          <label class="pill-lock" title="Посмотреть, как будет выглядеть платный экран в релизе">
+          <nav class="nav-links no-print" aria-label="Сервисы">
+            <a class="nav-link active" href="./">Карты · CheckGeo</a>
+            <a class="nav-link" href="https://neiroscan.ru/">ИИ · NeiroScan</a>
+            <a class="nav-link" href="#pricing-section">Тарифы</a>
+          </nav>
+          <label class="pill-lock no-print" title="Посмотреть, как будет выглядеть платный экран">
             <input type="checkbox" id="paywall-toggle">
-            <span>Превью paywall</span>
+            <span>Paywall</span>
           </label>
         </div>
       </div>
@@ -45,12 +49,13 @@
 
     <section class="hero-wrap">
       <div class="wrap hero">
-        <h1>Рентген вашей карточки на <span class="mark">Яндекс Картах и 2ГИС</span></h1>
-        <p class="hero-lead">За 30 секунд покажет, почему клиенты из вашего района уходят к соседям, сколько выручки теряется и сразу выдаст QR-стенд для белых отзывов, прайс-шаблон и SEO-ответы. Бесплатно до 3 точек.</p>
+        <h1>Рентген вашей карточки на <span class="mark">Яндекс Картах, 2ГИС и отзовиках</span></h1>
+        <p class="hero-lead">За 30 секунд покажет, почему клиенты из вашего района уходят к соседям, сколько выручки теряется, проверит Zoon / Отзовик.ру и выдаст QR-стенд для белых отзывов, прайс-шаблон и живые SEO-ответы.</p>
         <div class="hero-actions no-print">
-          <button type="button" class="demo-btn primary-start" id="btn-start-own">+ Проверить свою точку с нуля</button>
-          <span class="demo-label">или пример:</span>
+          <button type="button" class="demo-btn primary-start" id="btn-start-own">+ Проверить свою точку бесплатно</button>
+          <span class="demo-label">примеры:</span>
           <div id="demo-buttons" style="display:flex;gap:7px;flex-wrap:wrap;"></div>
+          <a class="demo-btn" href="https://neiroscan.ru/konstrukterra.html" target="_blank" rel="noopener">Пример PRO-отчёта ↗</a>
         </div>
       </div>
     </section>
@@ -274,20 +279,20 @@
       <section class="card pro-card" id="pro-section">
         <div class="pro-banner">
           <div class="pro-banner-left">
-            <span class="pill pill-pro">PRO · 1 990 ₽/мес</span>
-            <h2>Инструменты прокачки и конвейер отзывов</h2>
+            <span class="pill pill-pro">PRO · от 250 ₽</span>
+            <h2>Инструменты прокачки, отзовики и конвейер отзывов</h2>
           </div>
-          <span class="pill pill-test">Открыто бесплатно на тест</span>
+          <a class="btn btn-outline btn-sm no-print" href="#pricing-section" style="background:#FFFFFF;color:#111315;">Тарифы и полный отчёт →</a>
         </div>
 
         <div class="pro-body" id="pro-body">
           <div class="paywall-overlay">
             <div class="paywall-modal">
-              <span class="pill pill-pro" style="margin-bottom:10px;">PRO ТАРИФ</span>
-              <h3>Автопилот карточки и конвейер отзывов</h3>
-              <p>QR-тейблтент в 3 стилях + умный помощник отзыва для клиентов, SEO-ответы, шаблоны прайса, UTM-метки, план на 14 дней и безлимит точек.</p>
-              <div class="paywall-price">1 990 ₽ <span style="font-size:14px;font-weight:500;color:var(--muted);">/ мес за точку</span></div>
-              <button type="button" class="btn btn-primary" id="btn-unlock-test" style="width:100%;">Открыть бесплатно (режим теста)</button>
+              <span class="pill pill-pro" style="margin-bottom:10px;">PRO-ДОСТУП</span>
+              <h3>QR-конвейер отзывов и полный аудит точки</h3>
+              <p>Экспресс-пакет от 250 ₽ или полный комплексный аудит «Карты + ИИ» за 1 500 ₽ (разбор 50 отзывов, 4 соседа, Zoon/Отзовик и готовый пакет на 15 мин).</p>
+              <div class="paywall-price">от 250 ₽ <span style="font-size:14px;font-weight:500;color:var(--muted);">разово</span></div>
+              <button type="button" class="btn btn-primary" id="btn-unlock-test" style="width:100%;">Открыть демо-инструменты</button>
             </div>
           </div>
 
@@ -435,6 +440,10 @@
                 </div>
               </div>
 
+              <h3 style="font-size:16px;margin-bottom:4px;">Проверка присутствия на внешних отзовиках (Zoon · Отзовик.ру · IRecommend)</h3>
+              <p class="hint">Ведение 3+ площадок вместо одних Яндекс Карт даёт в среднем до ×1,5 больше локального трафика и усиливает рекомендации нейросетей.</p>
+              <div class="dirs-strip" id="ext-dirs-strip"></div>
+
               <h3 style="font-size:17px;margin-bottom:6px;">Пошаговый план на 14 дней (прогресс сохраняется)</h3>
               <p class="hint" style="margin-bottom:12px;">Собран под конкретные дыры вашей карточки — без рекламного бюджета.</p>
               <div id="plan-14-list"></div>
@@ -450,19 +459,127 @@
         </div>
       </section>
 
+      <!-- ПРОЗРАЧНЫЕ ТАРИФЫ (0 / 250 / 1 500 / 3-10 КАРТОЧЕК / VIP 5 000 ₽) -->
+      <section class="card no-print" id="pricing-section">
+        <div class="card-head" style="margin-bottom:6px;">
+          <div>
+            <span class="eyebrow">Тарифы · Прозрачная разница в ценности</span>
+            <h2 style="font-size:21px;">Бесплатный чек, разовый PRO-аудит или пакет на сеть</h2>
+          </div>
+          <a class="btn btn-outline btn-sm" href="https://neiroscan.ru/konstrukterra.html" target="_blank" rel="noopener">Смотреть живой пример PRO-отчёта за 1 500 ₽ ↗</a>
+        </div>
+        <p class="hint">Базовый чек и QR-превью бесплатны. Платите только когда нужен комплексный разбор с отзывами, соседями и готовым пакетом внедрения за 15 минут.</p>
+
+        <div class="pricing-grid">
+          <div class="plan-box">
+            <div class="plan-top"><span class="plan-tag">Старт</span></div>
+            <div class="plan-price">0 ₽ <span>навсегда</span></div>
+            <p class="plan-desc">Проверить здоровье карточки за 30 секунд и увидеть главные утечки.</p>
+            <ul class="plan-list">
+              <li>Индекс карточки 0–100 по 20 факторам</li>
+              <li>Оценка упущенных заявок и выручки по чеку</li>
+              <li>Автопроверка сайта и быстрая проверка Zoon / Отзовик</li>
+              <li>Превью QR-тейблтента и живые SEO-ответы ИИ</li>
+            </ul>
+            <a class="btn btn-outline btn-sm" href="#smart-input-card" style="width:100%;">Уже открыто выше ↑</a>
+          </div>
+
+          <div class="plan-box">
+            <div class="plan-top"><span class="plan-tag">Экспресс · 1 канал</span></div>
+            <div class="plan-price">250 ₽ <span>разово / 1 точка</span></div>
+            <p class="plan-desc">Быстро закрыть главную дыру по одному каналу — Карты ИЛИ ИИ.</p>
+            <ul class="plan-list">
+              <li>Детальный чек 1 канала (Карты <b>или</b> 5 запросов ИИ)</li>
+              <li>Проверка профилей 2ГИС, Zoon и Отзовик.ру</li>
+              <li>Готовый QR-помощник отзывов с перехватом негатива</li>
+              <li>1 ключевой блок внедрения (прайс + UTM или Schema.org) и PDF</li>
+            </ul>
+            <button type="button" class="btn btn-outline btn-sm" style="width:100%;" data-order-plan="Экспресс-чек (250 ₽ · 1 точка)">Заказать за 250 ₽ →</button>
+          </div>
+
+          <div class="plan-box featured">
+            <div class="plan-top"><span class="plan-tag">Полный PRO · Карты + ИИ</span><span class="pill pill-pro">ХИТ</span></div>
+            <div class="plan-price">1 500 ₽ <span>разово / 1 точка</span></div>
+            <p class="plan-desc">Уровень агентского аудита, готовый к передаче админу и в сайт за 15 минут:</p>
+            <ul class="plan-list">
+              <li><b>Оба канала сразу:</b> Я.Карты + 2ГИС + Zoon / Отзовик.ру + ИИ</li>
+              <li><b>Семантика 50 последних отзывов и 50 ответов</b> (перекосы по району и услугам)</li>
+              <li><b>Таблица сравнения с 4–5 реальными соседями</b> по району</li>
+              <li><b>6–8 живых запросов к ИИ</b> (включая высокомаржинальные услуги)</li>
+              <li><b>5-вкладочный пакет внедрения:</b> QR, 3 скрипта админу, переписанный прайс с UTM, Schema.org, FAQPage и план на 14 дней + отдельная ссылка и PDF</li>
+            </ul>
+            <button type="button" class="btn btn-dark btn-sm" style="width:100%;" data-order-plan="Полный PRO-аудит Карты + ИИ (1 500 ₽ · 1 точка)">Получить полный PRO за 1 500 ₽ →</button>
+          </div>
+        </div>
+
+        <div class="packs-strip">
+          <div class="pack-card">
+            <div>
+              <strong>Пакет на 3 карточки — 3 900 ₽ <span class="hint">(1 300 ₽ / точка)</span></strong>
+              <span class="hint">3 полных PRO-отчёта «Карты + ИИ» + сводное сравнение филиалов между собой.</span>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" data-order-plan="Пакет 3 карточки (3 900 ₽)">Выбрать 3 точки</button>
+          </div>
+          <div class="pack-card">
+            <div>
+              <strong>Пакет на 10 карточек — 9 900 ₽ <span class="hint">(990 ₽ / точка)</span></strong>
+              <span class="hint">Для сетей и франшиз: рейтинг всех 10 филиалов, где просадка и единый план работ.</span>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" data-order-plan="Пакет 10 карточек (9 900 ₽)">Выбрать 10 точек</button>
+          </div>
+        </div>
+
+        <div class="vip-box">
+          <div>
+            <span class="pill" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#FFFFFF;margin-bottom:6px;">ДЛЯ КОРПОРАТОВ И СЕТЕЙ · ОТ 5 000 ₽ / МЕС</span>
+            <h3 style="font-size:18px;color:#FFFFFF;">Постоянный мониторинг филиалов, отзывов и видимости в ИИ</h3>
+            <p>Для сетей и внутренних SEO/IT-команд: еженедельный контроль карточек и отзывов по всем филиалам, матрица 30–100 запросов LLM (брендовый + небрендовый спрос), список цитируемых URL и экспорт в Google Sheets / Excel.</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" data-order-plan="VIP Корпоративный мониторинг (от 5 000 ₽/мес)">Запросить VIP-пилот →</button>
+        </div>
+      </section>
+
+      <!-- Модалка быстрого заказа тарифа -->
+      <div class="order-backdrop hidden no-print" id="order-backdrop" role="dialog" aria-modal="true" aria-labelledby="order-title">
+        <div class="order-modal">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+            <div>
+              <span class="eyebrow">Оформление отчёта</span>
+              <h3 id="order-title">Заказ отчёта</h3>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-close-order">✕</button>
+          </div>
+          <p class="hint" id="order-plan-label" style="margin-top:4px;font-weight:600;color:var(--ink);"></p>
+          <form id="order-form">
+            <div class="field">
+              <label for="ord-point">Компания и город / ссылка на Яндекс Карты</label>
+              <input type="text" id="ord-point" required placeholder="Например: Конструктерра, Ростов-на-Дону или ссылка">
+            </div>
+            <div class="field">
+              <label for="ord-contact">Куда прислать отчёт (Telegram @username или телефон)</label>
+              <input type="text" id="ord-contact" required placeholder="@username или +7 999 000-00-00">
+            </div>
+            <div class="btn-row" style="margin-top:14px;">
+              <button type="submit" class="btn btn-dark" style="flex:1;">Отправить заявку →</button>
+            </div>
+            <p class="hint" id="order-status" style="margin-top:8px;"></p>
+          </form>
+        </div>
+      </div>
+
       <!-- Фидбек «Вот купишь сразу?» для проверки гипотезы на друзьях -->
       <section class="feedback-card no-print">
-        <span class="pill pill-pro" style="margin-bottom:8px;">ТЕСТ ИДЕИ · ОТВЕТ ЗА 10 СЕКУНД</span>
-        <h3 style="font-size:19px;color:#FFFFFF;">Честный вопрос: купили бы такой сервис для своих точек?</h3>
-        <p>Если на следующем шаге добавим 1-клик автопроверку по ссылке (без ручного ввода) и живые ИИ-ответы — выберите честный вариант и отправьте скопированный текст в Telegram.</p>
+        <span class="pill pill-pro" style="margin-bottom:8px;">ОБРАТНАЯ СВЯЗЬ · 10 СЕКУНД</span>
+        <h3 style="font-size:19px;color:#FFFFFF;">Какой формат полезнее всего для ваших точек?</h3>
+        <p>Выберите честный вариант — ответ зафиксируется и скопируется для Telegram.</p>
         <div class="fb-btns" id="fb-choices">
-          <button type="button" class="fb-btn" data-fb="🔥 Купил бы сразу за 1 990 ₽/мес">🔥 Купил бы сразу (1 990 ₽/мес)</button>
-          <button type="button" class="fb-btn" data-fb="⚡ Купил бы, если добавить полный автомат по ссылке">⚡ Купил бы с полным автоматом</button>
-          <button type="button" class="fb-btn" data-fb="🤔 Полезно бесплатно, но платить пока не готов">🤔 Только бесплатно</button>
+          <button type="button" class="fb-btn" data-fb="Полный PRO-отчёт за 1 500 ₽ — отличный чек">Полный PRO за 1 500 ₽</button>
+          <button type="button" class="fb-btn" data-fb="Пакет на 3 или 10 карточек / VIP-мониторинг">Пакет 3–10 точек / VIP 5 000 ₽</button>
+          <button type="button" class="fb-btn" data-fb="Хватает бесплатного или 250 ₽">Бесплатно / 250 ₽</button>
         </div>
         <div class="fb-extra">
-          <input type="text" id="fb-comment" placeholder="Что бы точно добавили или поменяли? (необязательно)">
-          <button type="button" class="btn btn-primary btn-sm" id="btn-copy-feedback">Скопировать вердикт для Telegram</button>
+          <input type="text" id="fb-comment" placeholder="Чего не хватило или какую площадку добавить?">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-copy-feedback">Скопировать отзыв для Telegram</button>
         </div>
       </section>
     </main>

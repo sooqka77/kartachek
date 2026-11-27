@@ -691,6 +691,23 @@
       });
     });
 
+    // Внешние отзовики (Zoon, Отзовик.ру, IRecommend) — быстрая проверка наличия точки
+    const dirsEl = $('ext-dirs-strip');
+    if (dirsEl) {
+      const q = encodeURIComponent(`${pt.name || ''} ${pt.city || ''}`.trim() || 'ваша компания');
+      const dirs = [
+        { name: 'Zoon.ru', desc: 'Один из главных источников ИИ и локального SEO в РФ.', url: `https://zoon.ru/search/?q=${q}` },
+        { name: 'Отзовик.ру', desc: 'Часто стоит в топ-3 Яндекса по запросу «[бренд] отзывы».', url: `https://otzovik.com/?search_text=${q}` },
+        { name: 'IRecommend', desc: 'Сильный траст у поисковиков и нейросетей по услугам.', url: `https://irecommend.ru/srch?query=${q}` }
+      ];
+      dirsEl.innerHTML = dirs.map(d => `
+        <div class="dir-box">
+          <div><strong>${esc(d.name)}</strong><p style="margin-top:3px;">${esc(d.desc)}</p></div>
+          <a class="btn btn-outline btn-sm" href="${d.url}" target="_blank" rel="noopener">Проверить точку ↗</a>
+        </div>
+      `).join('');
+    }
+
     const activeReal = getActivePoint();
     const doneMap = activeReal.doneSteps || {};
     $('plan-14-list').innerHTML = audit.plan14.map(step => {
@@ -1029,6 +1046,36 @@
         }
         btn.disabled = false;
         btn.textContent = '⚡ Автопроверка 2ГИС и сайта';
+      });
+    }
+
+    // Order / pricing modal
+    const ordBack = $('order-backdrop');
+    let selectedPlan = '';
+    if (ordBack) {
+      document.querySelectorAll('[data-order-plan]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedPlan = btn.getAttribute('data-order-plan') || '';
+          const pt = getActivePoint();
+          $('order-plan-label').textContent = selectedPlan;
+          $('ord-point').value = [pt.name, pt.city, pt.yandexUrl || pt.siteUrl].filter(Boolean).join(' · ');
+          $('order-status').textContent = '';
+          ordBack.classList.remove('hidden');
+          trackEvent('order_open', { plan: selectedPlan });
+        });
+      });
+      $('btn-close-order').addEventListener('click', () => ordBack.classList.add('hidden'));
+      ordBack.addEventListener('click', (e) => { if (e.target === ordBack) ordBack.classList.add('hidden'); });
+      $('order-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pointName = ($('ord-point').value || '').trim();
+        const contact = ($('ord-contact').value || '').trim();
+        const pt = getActivePoint();
+        trackEvent('order_intent', { plan: selectedPlan, pointName, url: pt.yandexUrl || pt.siteUrl || '', contact });
+        const txt = `Заявка CheckGeo (${selectedPlan}): ${pointName} | Контакт: ${contact}`;
+        copyText(txt, 'Заявка зафиксирована и скопирована!');
+        $('order-status').textContent = '✓ Заявка отправлена! Мы свяжемся по указанному контакту (текст также скопирован в буфер).';
+        setTimeout(() => ordBack.classList.add('hidden'), 1800);
       });
     }
 
