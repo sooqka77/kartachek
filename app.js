@@ -1,8 +1,8 @@
-/* UI-контроллер КартаЧек v2 */
+/* UI-контроллер CheckGeo v3 — чистый 1-кнопочный поток + автосбор Яндекс Карт / 2ГИС / сайта */
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'kartachek_state_v2';
+  const STORAGE_KEY = 'checkgeo_state_v3';
   const $ = (id) => document.getElementById(id);
 
   function esc(str) {
@@ -25,7 +25,7 @@
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
   }
 
   async function copyText(text, successMsg) {
@@ -58,7 +58,7 @@
     root.classList.remove('hidden');
 
     if (!data || !data.n) {
-      root.innerHTML = `<div class="review-card"><h1>Ссылка устарела</h1><p style="margin-top:8px;color:var(--muted);">Попросите у администратора свежий QR-код или вернитесь на главную страницу.</p><div class="btn-row"><a class="btn btn-primary" href="./">Открыть КартаЧек</a></div></div>`;
+      root.innerHTML = `<div class="review-card"><h1>Ссылка устарела</h1><p style="margin-top:8px;color:var(--muted);">Попросите у администратора свежий QR-код или вернитесь на главную страницу.</p><div class="btn-row"><a class="btn btn-primary" href="./">Открыть CheckGeo</a></div></div>`;
       return;
     }
 
@@ -97,26 +97,18 @@
     function renderHelper() {
       const draft = buildDraftText();
       const mapButtons = [];
-      if (yandexLink) {
-        mapButtons.push(`<button type="button" class="btn btn-primary" style="width:100%;" data-open-map="${esc(yandexLink)}">Скопировать текст и открыть Яндекс Карты ↗</button>`);
-      }
-      if (gisLink) {
-        mapButtons.push(`<button type="button" class="btn btn-dark" style="width:100%;" data-open-map="${esc(gisLink)}">Скопировать текст и открыть 2ГИС ↗</button>`);
-      }
-      if (!mapButtons.length) {
-        mapButtons.push(`<button type="button" class="btn btn-primary" style="width:100%;" id="btn-only-copy">Скопировать текст отзыва</button>`);
-      }
+      if (yandexLink) mapButtons.push(`<button type="button" class="btn btn-primary" style="width:100%;" data-open-map="${esc(yandexLink)}">Скопировать текст и открыть Яндекс Карты ↗</button>`);
+      if (gisLink) mapButtons.push(`<button type="button" class="btn btn-dark" style="width:100%;" data-open-map="${esc(gisLink)}">Скопировать текст и открыть 2ГИС ↗</button>`);
+      if (!mapButtons.length) mapButtons.push(`<button type="button" class="btn btn-primary" style="width:100%;" id="btn-only-copy">Скопировать текст отзыва</button>`);
 
       root.innerHTML = `
         <div class="review-card">
           <span class="eyebrow">Быстрый отзыв за 30 секунд</span>
           <h1>Как прошёл ваш визит в «${esc(data.n)}»?</h1>
-
           <div class="mood-grid">
             <button type="button" class="mood-btn ${mood === 'good' ? 'active' : ''}" data-mood="good">⭐ Всё отлично</button>
             <button type="button" class="mood-btn ${mood === 'issue' ? 'active' : ''}" data-mood="issue">💬 Есть замечание</button>
           </div>
-
           ${mood === 'good' ? `
             <p class="hint">Нажмите 2–3 пункта, что понравилось — мы соберём черновик, который можно поправить:</p>
             <div class="tag-cloud">
@@ -130,44 +122,26 @@
               <label for="rh-draft">Готовый текст отзыва (можно отредактировать)</label>
               <textarea id="rh-draft" rows="3">${esc(draft)}</textarea>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              ${mapButtons.join('')}
-            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">${mapButtons.join('')}</div>
           ` : `
             <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:12px;padding:14px;margin-bottom:14px;">
               <p style="font-weight:700;margin-bottom:6px;">Спасибо, что говорите прямо!</p>
               <p style="font-size:13.5px;color:var(--muted);">Напишите руководителю напрямую — так мы сможем разобраться и исправить ситуацию в тот же день.</p>
             </div>
-            ${contactLink ? `
-              <a class="btn btn-dark" style="width:100%;margin-bottom:10px;" href="${esc(contactLink)}" target="_blank" rel="noopener">Написать руководителю напрямую ↗</a>
-            ` : `<p class="hint" style="margin-bottom:10px;">Передайте замечание администратору точки — мы обязательно всё исправим.</p>`}
-            ${(yandexLink || gisLink) ? `
-              <p class="hint" style="text-align:center;margin-top:8px;">
-                Вы также в любой момент можете оставить публичный отзыв:
-                ${yandexLink ? `<a href="${esc(yandexLink)}" target="_blank" rel="noopener">Яндекс Карты</a>` : ''}
-                ${(yandexLink && gisLink) ? ' · ' : ''}
-                ${gisLink ? `<a href="${esc(gisLink)}" target="_blank" rel="noopener">2ГИС</a>` : ''}
-              </p>
-            ` : ''}
+            ${contactLink ? `<a class="btn btn-dark" style="width:100%;margin-bottom:10px;" href="${esc(contactLink)}" target="_blank" rel="noopener">Написать руководителю напрямую ↗</a>`
+              : `<p class="hint" style="margin-bottom:10px;">Передайте замечание администратору точки — мы обязательно всё исправим.</p>`}
+            ${(yandexLink || gisLink) ? `<p class="hint" style="text-align:center;margin-top:8px;">Вы также можете оставить публичный отзыв: ${yandexLink ? `<a href="${esc(yandexLink)}" target="_blank" rel="noopener">Яндекс Карты</a>` : ''}${(yandexLink && gisLink) ? ' · ' : ''}${gisLink ? `<a href="${esc(gisLink)}" target="_blank" rel="noopener">2ГИС</a>` : ''}</p>` : ''}
           `}
-
-          <p class="hint" style="text-align:center;margin-top:18px;font-size:11.5px;">
-            Сделано в <a href="./">КартаЧек</a> · Честные отзывы реальных клиентов
-          </p>
+          <p class="hint" style="text-align:center;margin-top:18px;font-size:12px;">Сделано в <a href="./">CheckGeo</a> · Честные отзывы реальных клиентов</p>
         </div>
       `;
 
-      root.querySelectorAll('[data-mood]').forEach(btn => {
-        btn.addEventListener('click', () => { mood = btn.getAttribute('data-mood'); renderHelper(); });
-      });
-      root.querySelectorAll('[data-tag]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const t = btn.getAttribute('data-tag');
-          if (selectedTags.has(t)) selectedTags.delete(t);
-          else selectedTags.add(t);
-          renderHelper();
-        });
-      });
+      root.querySelectorAll('[data-mood]').forEach(btn => btn.addEventListener('click', () => { mood = btn.getAttribute('data-mood'); renderHelper(); }));
+      root.querySelectorAll('[data-tag]').forEach(btn => btn.addEventListener('click', () => {
+        const t = btn.getAttribute('data-tag');
+        if (selectedTags.has(t)) selectedTags.delete(t); else selectedTags.add(t);
+        renderHelper();
+      }));
       const extraInput = $('rh-extra');
       if (extraInput) {
         extraInput.addEventListener('input', () => {
@@ -176,21 +150,14 @@
           if (draftEl) draftEl.value = buildDraftText();
         });
       }
-      root.querySelectorAll('[data-open-map]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const url = btn.getAttribute('data-open-map');
-          const txt = ($('rh-draft') && $('rh-draft').value) || buildDraftText();
-          await copyText(txt, 'Текст скопирован! Вставьте его в форму отзыва');
-          window.open(url, '_blank', 'noopener');
-        });
-      });
+      root.querySelectorAll('[data-open-map]').forEach(btn => btn.addEventListener('click', async () => {
+        const url = btn.getAttribute('data-open-map');
+        const txt = ($('rh-draft') && $('rh-draft').value) || buildDraftText();
+        await copyText(txt, 'Текст скопирован! Вставьте его в форму отзыва');
+        window.open(url, '_blank', 'noopener');
+      }));
       const onlyCopy = $('btn-only-copy');
-      if (onlyCopy) {
-        onlyCopy.addEventListener('click', () => {
-          const txt = ($('rh-draft') && $('rh-draft').value) || buildDraftText();
-          copyText(txt, 'Текст отзыва скопирован!');
-        });
-      }
+      if (onlyCopy) onlyCopy.addEventListener('click', () => copyText(($('rh-draft') && $('rh-draft').value) || buildDraftText(), 'Текст отзыва скопирован!'));
     }
 
     renderHelper();
@@ -203,22 +170,22 @@
   }
 
   /* =====================================================================
-   * РЕЖИМ 2: ОСНОВНОЕ ПРИЛОЖЕНИЕ КАРТАЧЕК
+   * РЕЖИМ 2: ОСНОВНОЕ ПРИЛОЖЕНИЕ CHECKGEO v3 (ФОКУСНЫЙ ПОТОК)
    * ===================================================================== */
-  function createBlankPoint(idx) {
+  function createBlankPoint() {
     return {
       id: 'pt-' + Date.now(),
       isDemo: false,
       name: '',
-      niche: 'kids',
-      city: 'Москва',
+      niche: 'other',
+      city: '',
       district: '',
       yandexUrl: '',
       gisUrl: '',
       siteUrl: '',
       tgContact: '',
       rating: 4.7,
-      reviewsCount: 15,
+      reviewsCount: 18,
       recentReviews30d: 1,
       replyRate: 40,
       photosCount: 20,
@@ -237,36 +204,34 @@
       avgCheck: 5000,
       ltvMonths: 6,
       monthlyDemand: 1000,
-      doneSteps: {}
+      doneSteps: {},
+      lookupNotice: '',
+      lookupOk: false
     };
   }
 
   function defaultState() {
-    const first = JSON.parse(JSON.stringify(KartaData.DEMO_PRESETS[0].point));
-    first.id = 'pt-1';
-    first.isDemo = true;
-    first.doneSteps = {};
     return {
-      activePointId: 'pt-1',
-      points: [first],
+      hasRunCheck: false,
+      point: createBlankPoint(),
       findingFilter: 'all',
       activeProTab: 'qr',
       qrMode: 'helper',
       tentTheme: 'yellow',
       tentCta: 'Понравилось у нас? Поделитесь за 30 секунд!',
-      shortScriptLink: true,
-      selectedFeedback: ''
+      shortScriptLink: true
     };
   }
 
   function loadState() {
     let st = defaultState();
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('kartachek_state_v1');
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.points) && parsed.points.length) {
+        if (parsed && parsed.point && !parsed.point.isDemo && (parsed.point.name || parsed.point.yandexUrl)) {
           st = Object.assign(st, parsed);
+          st.point = Object.assign(createBlankPoint(), parsed.point);
         }
       }
     } catch (_) {}
@@ -274,12 +239,8 @@
     if (window.location.hash && window.location.hash.startsWith('#share=')) {
       const payload = KartaEngine.decodePayload(window.location.hash.slice(7));
       if (payload && payload.name) {
-        const id = 'pt-shared-' + Date.now();
-        payload.id = id;
-        payload.isDemo = false;
-        payload.doneSteps = payload.doneSteps || {};
-        st.points.unshift(payload);
-        st.activePointId = id;
+        st.point = Object.assign(createBlankPoint(), payload, { isDemo: false });
+        st.hasRunCheck = true;
         history.replaceState(null, '', window.location.pathname + window.location.search);
         setTimeout(() => showToast(`Открыт отчёт по точке «${payload.name}»`), 300);
       }
@@ -293,11 +254,29 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
   }
 
-  function getActivePoint() {
-    let pt = state.points.find(p => p.id === state.activePointId);
-    if (!pt) { pt = state.points[0]; state.activePointId = pt.id; }
-    if (!pt.doneSteps) pt.doneSteps = {};
-    return pt;
+  function getPoint() {
+    if (!state.point) state.point = createBlankPoint();
+    if (!state.point.doneSteps) state.point.doneSteps = {};
+    return state.point;
+  }
+
+  function getBackendUrl() {
+    return (window.KARTA_CONFIG && window.KARTA_CONFIG.backendUrl)
+      ? window.KARTA_CONFIG.backendUrl.replace(/\/+$/, '')
+      : '';
+  }
+
+  function trackEvent(event, meta) {
+    const api = getBackendUrl();
+    if (!api) return;
+    try {
+      fetch(`${api}/api/telemetry/event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ app: 'kartachek', event, meta: meta || {} }),
+        keepalive: true
+      }).catch(() => {});
+    } catch (_) {}
   }
 
   function syncTapChipsVisual() {
@@ -307,51 +286,17 @@
     });
   }
 
-  function startOwnBlankPoint() {
-    const active = getActivePoint();
-    if (active.isDemo) {
-      const fresh = createBlankPoint(1);
-      fresh.id = active.id;
-      Object.assign(active, fresh);
-    } else {
-      const fresh = createBlankPoint(state.points.length + 1);
-      state.points.push(fresh);
-      state.activePointId = fresh.id;
-    }
-    saveState();
-    populateFormFromPoint(getActivePoint());
-    $('smart-paste-input').value = '';
-    $('paste-signals').innerHTML = '';
-    renderAll();
-    $('smart-paste-input').focus();
-    $('smart-input-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    showToast('Готово! Вставьте карточку (Cmd+V) или откройте ручной ввод');
-  }
-
   function initStaticControls() {
     $('f-niche').innerHTML = Object.values(KartaData.NICHES)
       .map(n => `<option value="${esc(n.id)}">${esc(n.label)}</option>`)
       .join('');
-
-    $('demo-buttons').innerHTML = KartaData.DEMO_PRESETS
-      .map(d => `<button type="button" class="demo-btn" data-demo="${esc(d.id)}">${esc(d.label.replace(/^Пример \d+: /, ''))}</button>`)
-      .join('');
-
-    $('demo-buttons').querySelectorAll('[data-demo]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const preset = KartaData.DEMO_PRESETS.find(d => d.id === btn.getAttribute('data-demo'));
-        if (!preset) return;
-        const active = getActivePoint();
-        Object.assign(active, JSON.parse(JSON.stringify(preset.point)), { id: active.id, isDemo: true, doneSteps: {} });
-        saveState();
-        populateFormFromPoint(active);
-        renderAll();
-        showToast(`Загружен пример: ${preset.point.name}`);
-      });
-    });
   }
 
   function populateFormFromPoint(pt) {
+    $('quick-url').value = pt.yandexUrl || pt.gisUrl || '';
+    $('quick-name').value = [pt.name, pt.city].filter(Boolean).join(', ');
+    $('quick-site').value = pt.siteUrl || '';
+
     $('f-name').value = pt.name || '';
     $('f-niche').value = pt.niche || 'other';
     $('f-city').value = pt.city || '';
@@ -381,8 +326,8 @@
     syncTapChipsVisual();
   }
 
-  function syncPointFromForm() {
-    const pt = getActivePoint();
+  function syncPointFromManualForm() {
+    const pt = getPoint();
     const niche = KartaData.NICHES[$('f-niche').value] || KartaData.NICHES.other;
     pt.isDemo = false;
     pt.name = $('f-name').value.trim();
@@ -392,14 +337,16 @@
     pt.yandexUrl = $('f-yandex-url').value.trim();
     pt.gisUrl = $('f-gis-url').value.trim();
     pt.siteUrl = $('f-site-url').value.trim();
-    pt.rating = parseFloat($('f-rating').value) || 0;
+    pt.tgContact = $('f-tg').value.trim();
+    pt.rating = Math.min(5, Math.max(0, parseFloat($('f-rating').value) || 0));
     pt.reviewsCount = Math.max(0, parseInt($('f-reviews').value, 10) || 0);
     pt.recentReviews30d = Math.max(0, parseInt($('f-recent30').value, 10) || 0);
-    pt.replyRate = Math.max(0, Math.min(100, parseInt($('f-reply-rate').value, 10) || 0));
+    pt.replyRate = Math.min(100, Math.max(0, parseInt($('f-reply-rate').value, 10) || 0));
     pt.photosCount = Math.max(0, parseInt($('f-photos').value, 10) || 0);
-    pt.leaderReviews = Math.max(10, parseInt($('f-leader-reviews').value, 10) || niche.benchLeaderReviews);
-    pt.avgCheck = Math.max(300, parseInt($('f-check').value, 10) || niche.defaultCheck);
-    pt.tgContact = $('f-tg').value.trim();
+    pt.leaderReviews = Math.max(1, parseInt($('f-leader-reviews').value, 10) || niche.defaultLeaderReviews);
+    pt.avgCheck = Math.max(100, parseInt($('f-check').value, 10) || niche.defaultCheck);
+    pt.ltvMonths = niche.defaultLtvMonths;
+    pt.monthlyDemand = niche.defaultMonthlyDemand;
 
     pt.verified = $('c-verified').checked;
     pt.rubricMatchesLeaders = $('c-rubric').checked;
@@ -416,166 +363,156 @@
     return pt;
   }
 
-  function renderPointsBar() {
-    const wrap = $('points-bar');
-    const chips = state.points.map(pt => {
-      const a = KartaEngine.runCardAudit(Object.assign({}, pt, { name: pt.name || 'Моя точка' }));
-      const isAct = pt.id === state.activePointId;
-      return `
-        <div class="point-chip ${isAct ? 'active' : ''}" data-select-pt="${esc(pt.id)}" role="button" tabindex="0">
-          <span>${esc(pt.name || 'Новая точка')}</span>
-          <span class="chip-score">${a.totalScore}</span>
-          ${state.points.length > 1 ? `<button type="button" class="chip-del" data-del-pt="${esc(pt.id)}" title="Удалить точку">×</button>` : ''}
-        </div>
-      `;
-    }).join('');
+  async function runOneClickCardCheck() {
+    const errEl = $('form-error');
+    errEl.classList.add('hidden');
 
-    const countNote = state.points.length >= 3
-      ? `<span class="hint">Бесплатно: 3 точки · доп. точки открыты в PRO-тесте</span>`
-      : `<span class="hint">Точек: ${state.points.length} / 3 бесплатно</span>`;
+    const rawUrlOrText = ($('quick-url').value || '').trim();
+    const rawNameCity = ($('quick-name').value || '').trim();
+    let rawSite = ($('quick-site').value || '').trim();
 
-    wrap.innerHTML = `${chips}<button type="button" class="add-point-btn" id="btn-add-point">+ Добавить точку</button>${countNote}`;
+    if (!rawUrlOrText && !rawNameCity && !rawSite) {
+      errEl.textContent = 'Вставьте ссылку на Яндекс Карты / 2ГИС или введите название компании и город.';
+      errEl.classList.remove('hidden');
+      $('quick-url').focus();
+      return;
+    }
 
-    wrap.querySelectorAll('[data-select-pt]').forEach(el => {
-      el.addEventListener('click', (e) => {
-        if (e.target.hasAttribute('data-del-pt')) return;
-        state.activePointId = el.getAttribute('data-select-pt');
-        saveState();
-        populateFormFromPoint(getActivePoint());
-        renderAll();
-      });
-    });
+    const pt = createBlankPoint();
 
-    wrap.querySelectorAll('[data-del-pt]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-del-pt');
-        if (state.points.length <= 1) return;
-        state.points = state.points.filter(p => p.id !== id);
-        if (state.activePointId === id) state.activePointId = state.points[0].id;
-        saveState();
-        populateFormFromPoint(getActivePoint());
-        renderAll();
-      });
-    });
+    // Если пользователь вставил в поле ссылки целиком скопированный текст карточки — парсим его!
+    if (rawUrlOrText.length > 140 || /\n/.test(rawUrlOrText)) {
+      const parsed = KartaEngine.parsePastedCardText(rawUrlOrText);
+      if (parsed.detected) Object.assign(pt, parsed.patch);
+    } else if (/yandex\./i.test(rawUrlOrText)) {
+      pt.yandexUrl = /^https?:\/\//i.test(rawUrlOrText) ? rawUrlOrText : 'https://' + rawUrlOrText;
+    } else if (/2gis\./i.test(rawUrlOrText)) {
+      pt.gisUrl = /^https?:\/\//i.test(rawUrlOrText) ? rawUrlOrText : 'https://' + rawUrlOrText;
+    } else if (rawUrlOrText && /\.[a-zа-яё]{2,}/i.test(rawUrlOrText) && !rawSite) {
+      rawSite = rawUrlOrText;
+    } else if (rawUrlOrText && !rawNameCity) {
+      pt.name = rawUrlOrText;
+    }
 
-    $('btn-add-point').addEventListener('click', () => {
-      const fresh = createBlankPoint(state.points.length + 1);
-      state.points.push(fresh);
-      state.activePointId = fresh.id;
-      saveState();
-      populateFormFromPoint(fresh);
-      renderAll();
-      $('f-name').focus();
-    });
+    if (rawNameCity) {
+      const parts = rawNameCity.split(',').map(s => s.trim()).filter(Boolean);
+      if (!pt.name && parts[0]) pt.name = parts[0];
+      if (parts.length > 1) pt.city = parts[1];
+      if (parts.length > 2) pt.district = parts.slice(2).join(', ');
+    }
+    if (rawSite) {
+      pt.siteUrl = /^https?:\/\//i.test(rawSite) ? rawSite : 'https://' + rawSite;
+    }
+
+    const btn = $('btn-check-card-now');
+    btn.disabled = true;
+    btn.textContent = 'Проверяем карточку на картах и сайте...';
+    const chips = [];
+
+    const api = getBackendUrl();
+    if (api && (pt.yandexUrl || pt.name || pt.siteUrl)) {
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 16000);
+        const r = await fetch(`${api}/api/geo/lookup`, {
+          method: 'POST',
+          signal: ctrl.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            yandexUrl: pt.yandexUrl,
+            query: pt.name,
+            city: pt.city,
+            district: pt.district,
+            niche: pt.niche,
+            siteUrl: pt.siteUrl
+          })
+        });
+        clearTimeout(t);
+        const data = await r.json();
+        if (r.ok && data.ok) {
+          if (data.yandexCard && data.yandexCard.ok) {
+            const m = data.yandexCard.meta || {};
+            const sem = data.yandexCard.semantics || {};
+            if (m.title && !pt.name) pt.name = m.title;
+            if (m.address && !pt.district) pt.district = m.address;
+            if (m.rating != null) pt.rating = Number(m.rating);
+            if (m.reviewCount != null) pt.reviewsCount = Number(m.reviewCount);
+            if (sem.recent30d != null) pt.recentReviews30d = Number(sem.recent30d);
+            if (sem.replyRate != null) pt.replyRate = Number(sem.replyRate);
+            if (m.photoCount != null) pt.photosCount = Number(m.photoCount);
+            if (m.hasBooking) pt.hasOnlineBooking = true;
+            if (m.hasCompetitorAds) pt.hasCompetitorAds = true;
+            if (m.hasGoodPlace) pt.verified = true;
+            if (!pt.siteUrl && Array.isArray(m.urls) && m.urls[0]) pt.siteUrl = m.urls[0];
+            pt.lookupOk = true;
+            pt.lookupNotice = `Данные загружены прямо с Яндекс Карт: рейтинг ${pt.rating}, ${pt.reviewsCount} отзывов (${pt.recentReviews30d} за 30 дней), ответы ${pt.replyRate}%.`;
+            chips.push(`✓ Яндекс Карты: ${pt.rating} ★ · ${pt.reviewsCount} отз.`);
+          } else if (pt.yandexUrl && data.yandexCard && data.yandexCard.captchaBlocked) {
+            pt.lookupOk = false;
+            pt.lookupNotice = 'Яндекс Карты запросили капчу при авточтении — QR-код уже готов, а для точного индекса уточните 4 цифры ниже или вставьте текст карточки.';
+            chips.push('⚠ Яндекс запросил капчу — можно уточнить цифры вручную');
+          } else if (!pt.yandexUrl) {
+            pt.lookupOk = false;
+            pt.lookupNotice = 'Показана базовая оценка — чтобы подтянуть точный рейтинг, отзывы и готовый QR-код, добавьте ссылку на Яндекс Карты или уточните 4 цифры в блоке ниже.';
+          }
+
+          if (data.twogis) {
+            pt.has2gisSynced = true;
+            if (data.twogis.gisUrl && !pt.gisUrl) pt.gisUrl = data.twogis.gisUrl;
+            if (data.twogis.address && !pt.district) pt.district = data.twogis.address;
+            chips.push(`✓ 2ГИС: ${data.twogis.rating || '—'} ★`);
+          }
+
+          if (data.siteReport) {
+            const sr = data.siteReport;
+            chips.push(sr.https ? `✓ Сайт HTTPS` : '⚠ Сайт без HTTPS');
+            if (sr.links?.yandexUrl && !pt.yandexUrl) { pt.yandexUrl = sr.links.yandexUrl; chips.push('✓ Найдена карточка Яндекс Карт'); }
+            if (sr.links?.gisUrl && !pt.gisUrl) { pt.gisUrl = sr.links.gisUrl; pt.has2gisSynced = true; chips.push('✓ Найден 2ГИС'); }
+            if (sr.links?.zoonUrl || sr.links?.otzovikUrl || sr.links?.irecommendUrl) { pt.hasOtherDirs = true; chips.push('✓ Найдены отзовики'); }
+            if (sr.links?.tgUrl && !pt.tgContact) pt.tgContact = sr.links.tgUrl;
+          }
+        }
+      } catch (_) {
+        pt.lookupNotice = 'Показан быстрый расчёт — вы можете уточнить рейтинг, отзывы и фото в блоке ниже.';
+      }
+    }
+
+    if (!pt.name) pt.name = 'Ваша точка';
+    if (!pt.city) pt.city = 'Москва';
+    state.point = pt;
+    state.hasRunCheck = true;
+    saveState();
+    populateFormFromPoint(pt);
+    renderAll();
+
+    $('paste-signals').innerHTML = chips.map(s => `<span class="sig-chip ${s.startsWith('⚠') ? 'warn' : ''}">${esc(s)}</span>`).join('');
+    btn.disabled = false;
+    btn.textContent = 'Проверить карточку бесплатно →';
+    showToast('Проверка карточки готова!');
+    $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function renderAll() {
-    const pt = getActivePoint();
-    const safePt = Object.assign({}, pt, { name: pt.name || 'Моя точка' });
-    const audit = KartaEngine.runCardAudit(safePt);
-
-    $('demo-banner').classList.toggle('hidden', !pt.isDemo);
-
-    $('yandex-url-hint').textContent = audit.urls.yandexOrgId
-      ? `✓ Найден ID ${audit.urls.yandexOrgId} — прямая ссылка на отзыв готова`
-      : 'Вставьте ссылку из браузера (/maps/org/.../ID/)';
-    $('gis-url-hint').textContent = audit.urls.gisFirmId
-      ? `✓ Найден 2ГИС ID ${audit.urls.gisFirmId} — ссылка на отзыв готова`
-      : 'Для QR-стенда и отзывов 2ГИС';
-
-    renderPointsBar();
-
-    $('res-point-title').textContent = safePt.name + (safePt.district ? ` · ${safePt.district}` : '');
-    $('res-score').textContent = audit.totalScore;
-    const badge = $('res-status-badge');
-    badge.textContent = audit.status.label;
-    badge.className = 'status-badge ' + audit.status.code;
-    $('res-summary').textContent = audit.status.summary;
-
-    const arc = $('gauge-arc');
-    arc.style.strokeDashoffset = (314.16 * (1 - audit.totalScore / 100)).toFixed(1);
-    arc.style.stroke = audit.status.code === 'good' ? '#15803D' : audit.status.code === 'mid' ? '#D97706' : '#E53935';
-
-    $('res-traffic-counts').innerHTML = `
-      <span class="t-pill red">● ${audit.counts.red} критично</span>
-      <span class="t-pill yellow">● ${audit.counts.yellow} улучшить</span>
-      <span class="t-pill green">● ${audit.counts.green} ок</span>
-    `;
-
-    $('res-pillars').innerHTML = audit.pillars.map(pl => {
-      const pct = Math.round((pl.score / pl.max) * 100);
-      const cls = pct >= 75 ? 'good' : pct >= 45 ? 'mid' : 'bad';
+  function renderFindingsList(items) {
+    if (!items.length) return '<p class="hint">В этой категории пунктов нет.</p>';
+    return items.map(f => {
+      const tagLabel = f.level === 'red' ? 'Критично' : f.level === 'yellow' ? 'Улучшить' : 'Хорошо';
       return `
-        <div class="pillar-row">
-          <span>${esc(pl.label)}</span>
-          <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
-          <span class="mono" style="text-align:right;font-weight:700;">${pl.score}/${pl.max}</span>
+        <div class="finding ${f.level}">
+          <span class="f-tag ${f.level}">${tagLabel}</span>
+          <div>
+            <h4>${esc(f.title)}</h4>
+            <p class="f-why">${esc(f.why)}</p>
+            <div class="f-fix"><b>Что сделать:</b> ${esc(f.fix)}</div>
+          </div>
         </div>
       `;
     }).join('');
-
-    const filtered = state.findingFilter === 'all'
-      ? audit.findings
-      : audit.findings.filter(f => f.level === state.findingFilter);
-
-    $('res-findings').innerHTML = filtered.length
-      ? filtered.map(f => {
-          const tagLabel = f.level === 'red' ? 'Критично' : f.level === 'yellow' ? 'Улучшить' : 'Хорошо';
-          return `
-            <div class="finding ${f.level}">
-              <span class="f-tag ${f.level}">${tagLabel}</span>
-              <div>
-                <h4>${esc(f.title)}</h4>
-                <p class="f-why">${esc(f.why)}</p>
-                <div class="f-fix"><b>Что сделать:</b> ${esc(f.fix)}</div>
-              </div>
-            </div>
-          `;
-        }).join('')
-      : `<p class="hint">В этой категории пунктов нет.</p>`;
-
-    // Competitor gap
-    const c = audit.competitor;
-    $('comp-desc').textContent = c.reviewGap === 0
-      ? 'По числу отзывов вы на уровне или выше ориентира лидера района — удерживайте свежесть!'
-      : `Чтобы догнать лидера (${c.leaderReviews} отзывов), нужен стабильный белый поток ~${c.recommendedPace} отзывов в месяц без накруток.`;
-    $('comp-stats').innerHTML = `
-      <div class="stat-box"><span class="k">Ваши отзывы</span><span class="v">${safePt.reviewsCount}</span></div>
-      <div class="stat-box"><span class="k">Лидер района</span><span class="v">${c.leaderReviews}</span></div>
-      <div class="stat-box highlight"><span class="k">Разрыв</span><span class="v">−${c.reviewGap}</span></div>
-      <div class="stat-box"><span class="k">Срок догона</span><span class="v">${c.monthsToCatch ? c.monthsToCatch + ' мес' : 'Вы в топе'}</span></div>
-    `;
-
-    // Interactive ROI
-    const r = audit.roi;
-    const slider = $('roi-check-slider');
-    slider.value = Math.min(25000, Math.max(500, r.avgCheck));
-    $('roi-check-label').textContent = fmtRub(r.avgCheck);
-    $('roi-stats').innerHTML = `
-      <div class="stat-box"><span class="k">Упущено обращений/мес</span><span class="v">~${r.missedLeadsMonth}</span></div>
-      <div class="stat-box"><span class="k">Упущено клиентов/мес</span><span class="v">~${r.missedClientsMonth}</span></div>
-      <div class="stat-box highlight"><span class="k">Потеря в 1-й месяц</span><span class="v">${fmtRub(r.missedFirstMonthRev)}</span></div>
-      <div class="stat-box"><span class="k">Потеря с учётом LTV</span><span class="v">${fmtRub(r.missedLtvRev)}</span></div>
-    `;
-
-    renderQrStudio(safePt, audit);
-
-    if (!$('rep-kw').value && audit.niche.seoKeywords[0]) {
-      $('rep-kw').placeholder = audit.niche.seoKeywords[0];
-    }
-    $('appeal-text').textContent = KartaEngine.generateAppealTemplate(safePt.name, '[дата и имя автора]');
-    if (!$('replies-output').innerHTML) renderReplies(safePt, audit);
-
-    renderProTools(safePt, audit);
-    renderCompareTable();
   }
 
   function getQrTargetUrl(pt, audit) {
     const basePage = window.location.origin === 'null' || window.location.protocol === 'file:'
-      ? 'https://sooqka77.github.io/kartachek/'
+      ? 'https://checkgeo.ru/'
       : (window.location.origin + window.location.pathname);
-
     if (state.qrMode === 'yandex') return audit.urls.yandexDirectReviewUrl || 'https://yandex.ru/maps/';
     if (state.qrMode === 'gis') return audit.urls.gisDirectReviewUrl || 'https://2gis.ru/';
     return KartaEngine.buildReviewHelperUrl(basePage, pt);
@@ -599,7 +536,6 @@
       $('tent-qr-svg').innerHTML = `<p class="hint" style="color:var(--pin);padding:16px;">${esc(e.message)}</p>`;
     }
 
-    // Короткая ссылка для мессенджеров (чтобы не слать клиенту 240-символьную строку)
     const chatLink = (state.shortScriptLink && audit.urls.yandexDirectReviewUrl)
       ? audit.urls.yandexDirectReviewUrl
       : targetUrl;
@@ -624,10 +560,7 @@
     `).join('');
 
     $('scripts-container').querySelectorAll('[data-copy-script]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-copy-script'), 10);
-        copyText(scripts[idx].text, 'Скрипт скопирован!');
-      });
+      btn.addEventListener('click', () => copyText(scripts[parseInt(btn.getAttribute('data-copy-script'), 10)].text, 'Скрипт скопирован!'));
     });
   }
 
@@ -641,8 +574,8 @@
       district: pt.district,
       contactInfo: pt.tgContact || 'по телефону точки'
     });
-    const toneName = res.tone === 'negative' ? 'Негативный' : res.tone === 'neutral' ? 'Смешанный / нейтральный' : 'Позитивный';
-    $('replies-output').innerHTML = `<p class="hint" style="margin-bottom:8px;">Определена тональность: <b>${toneName}</b></p>` +
+    const toneName = res.tone === 'negative' ? 'Негативный' : res.tone === 'neutral' ? 'Смешанный' : 'Позитивный';
+    $('replies-output').innerHTML = `<p class="hint" style="margin-bottom:8px;">Тональность: <b>${toneName}</b></p>` +
       res.variants.map((v, idx) => `
         <div class="copy-block">
           <div class="copy-block-head">
@@ -654,15 +587,11 @@
       `).join('');
 
     $('replies-output').querySelectorAll('[data-copy-reply]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-copy-reply'), 10);
-        copyText(res.variants[idx].text, 'Ответ скопирован!');
-      });
+      btn.addEventListener('click', () => copyText(res.variants[parseInt(btn.getAttribute('data-copy-reply'), 10)].text, 'Ответ скопирован!'));
     });
   }
 
   function renderProTools(pt, audit) {
-    // Прайс-шаблон под нишу
     const svcs = (audit.niche.serviceTemplates || []).map((s, i) => `${i + 1}. ${s}`).join('\n');
     $('services-template-text').textContent = svcs;
 
@@ -682,34 +611,26 @@
             <div class="mono" style="font-size:11.5px;word-break:break-all;color:var(--muted);">${esc(u.url)}</div>
           </div>
         `).join('')
-      : `<p class="hint">Укажите сайт в «Точном аудите» выше — здесь появятся готовые UTM-ссылки.</p>`;
+      : `<p class="hint">Укажите сайт выше — здесь появятся готовые UTM-ссылки.</p>`;
 
     $('utm-output').querySelectorAll('[data-copy-utm]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-copy-utm'), 10);
-        copyText(utms[idx].url, 'UTM-ссылка скопирована!');
-      });
+      btn.addEventListener('click', () => copyText(utms[parseInt(btn.getAttribute('data-copy-utm'), 10)].url, 'UTM-ссылка скопирована!'));
     });
 
-    // Внешние отзовики (Zoon, Отзовик.ру, IRecommend) — быстрая проверка наличия точки
-    const dirsEl = $('ext-dirs-strip');
-    if (dirsEl) {
-      const q = encodeURIComponent(`${pt.name || ''} ${pt.city || ''}`.trim() || 'ваша компания');
-      const dirs = [
-        { name: 'Zoon.ru', desc: 'Один из главных источников ИИ и локального SEO в РФ.', url: `https://zoon.ru/search/?q=${q}` },
-        { name: 'Отзовик.ру', desc: 'Часто стоит в топ-3 Яндекса по запросу «[бренд] отзывы».', url: `https://otzovik.com/?search_text=${q}` },
-        { name: 'IRecommend', desc: 'Сильный траст у поисковиков и нейросетей по услугам.', url: `https://irecommend.ru/srch?query=${q}` }
-      ];
-      dirsEl.innerHTML = dirs.map(d => `
-        <div class="dir-box">
-          <div><strong>${esc(d.name)}</strong><p style="margin-top:3px;">${esc(d.desc)}</p></div>
-          <a class="btn btn-outline btn-sm" href="${d.url}" target="_blank" rel="noopener">Проверить точку ↗</a>
-        </div>
-      `).join('');
-    }
+    const q = encodeURIComponent(`${pt.name || ''} ${pt.city || ''}`.trim() || 'ваша компания');
+    const dirs = [
+      { name: 'Zoon.ru', desc: 'Один из главных источников локального SEO и нейросетей.', url: `https://zoon.ru/search/?q=${q}` },
+      { name: 'Отзовик.ру', desc: 'Часто стоит в топ-3 Яндекса по запросу «[бренд] отзывы».', url: `https://otzovik.com/?search_text=${q}` },
+      { name: 'IRecommend', desc: 'Сильный траст у поисковиков и ИИ по услугам.', url: `https://irecommend.ru/srch?query=${q}` }
+    ];
+    $('ext-dirs-strip').innerHTML = dirs.map(d => `
+      <div class="dir-box">
+        <div><strong>${esc(d.name)}</strong><p style="margin-top:3px;">${esc(d.desc)}</p></div>
+        <a class="btn btn-outline btn-sm" href="${d.url}" target="_blank" rel="noopener">Проверить ↗</a>
+      </div>
+    `).join('');
 
-    const activeReal = getActivePoint();
-    const doneMap = activeReal.doneSteps || {};
+    const doneMap = pt.doneSteps || {};
     $('plan-14-list').innerHTML = audit.plan14.map(step => {
       const done = !!doneMap[step.id];
       return `
@@ -717,8 +638,8 @@
           <input type="checkbox" data-plan-step="${esc(step.id)}" ${done ? 'checked' : ''}>
           <div>
             <span class="plan-day">${esc(step.day)} · ${esc(step.pillar)}</span>
-            <div style="font-weight:700;font-size:14px;">${esc(step.title)}</div>
-            <div style="font-size:13px;color:var(--muted);margin-top:2px;">${esc(step.action)}</div>
+            <div style="font-weight:700;font-size:14.5px;">${esc(step.title)}</div>
+            <div style="font-size:13.5px;color:var(--muted);margin-top:2px;">${esc(step.action)}</div>
           </div>
         </label>
       `;
@@ -726,142 +647,198 @@
 
     $('plan-14-list').querySelectorAll('[data-plan-step]').forEach(cb => {
       cb.addEventListener('change', () => {
-        activeReal.doneSteps[cb.getAttribute('data-plan-step')] = cb.checked;
+        pt.doneSteps[cb.getAttribute('data-plan-step')] = cb.checked;
         saveState();
         renderProTools(pt, audit);
       });
     });
   }
 
-  function renderCompareTable() {
-    const rows = state.points.map(pt => {
-      const safe = Object.assign({}, pt, { name: pt.name || 'Новая точка' });
-      const a = KartaEngine.runCardAudit(safe);
-      const cls = a.status.code === 'good' ? 'green' : a.status.code === 'mid' ? 'yellow' : 'red';
+  function renderAll() {
+    const ws = $('results-workspace');
+    ws.classList.toggle('hidden', !state.hasRunCheck);
+    if (!state.hasRunCheck) return;
+
+    const pt = getPoint();
+    const safePt = Object.assign({}, pt, { name: pt.name || 'Ваша точка' });
+    const audit = KartaEngine.runCardAudit(safePt);
+
+    const notice = $('lookup-banner');
+    if (pt.lookupNotice) {
+      notice.className = 'info-strip no-print' + (pt.lookupOk ? ' ok' : '');
+      notice.innerHTML = `<span>${esc(pt.lookupNotice)}</span>${pt.lookupOk ? '' : '<button type="button" class="btn btn-outline btn-sm" id="btn-open-tune-inline">Уточнить цифры ▾</button>'}`;
+      notice.classList.remove('hidden');
+      const tuneBtn = $('btn-open-tune-inline');
+      if (tuneBtn) tuneBtn.addEventListener('click', () => { $('manual-drawer').open = true; $('f-rating').focus(); });
+    } else {
+      notice.classList.add('hidden');
+    }
+
+    $('yandex-url-hint').textContent = audit.urls.yandexOrgId
+      ? `✓ Найден ID ${audit.urls.yandexOrgId} — прямая ссылка на отзыв готова`
+      : 'Вставьте ссылку из браузера (/maps/org/.../ID/)';
+    $('gis-url-hint').textContent = audit.urls.gisFirmId
+      ? `✓ Найден 2ГИС ID ${audit.urls.gisFirmId} — ссылка готова`
+      : 'Для QR-стенда и отзывов 2ГИС';
+
+    $('res-point-title').textContent = safePt.name + (safePt.district ? ` · ${safePt.district}` : (safePt.city ? ` · ${safePt.city}` : ''));
+    $('res-score').textContent = audit.totalScore;
+    const badge = $('res-status-badge');
+    badge.textContent = audit.status.label;
+    badge.className = 'status-badge ' + audit.status.code;
+    $('res-summary').textContent = audit.status.summary;
+
+    const arc = $('gauge-arc');
+    arc.style.strokeDashoffset = (314.16 * (1 - audit.totalScore / 100)).toFixed(1);
+    arc.style.stroke = audit.status.code === 'good' ? '#15803D' : audit.status.code === 'mid' ? '#D97706' : '#B91C1C';
+
+    $('res-traffic-counts').innerHTML = `
+      <span class="t-pill red">● ${audit.counts.red} критично</span>
+      <span class="t-pill yellow">● ${audit.counts.yellow} улучшить</span>
+      <span class="t-pill green">● ${audit.counts.green} ок</span>
+    `;
+
+    $('res-pillars').innerHTML = audit.pillars.map(pl => {
+      const pct = Math.round((pl.score / pl.max) * 100);
+      const cls = pct >= 75 ? 'good' : pct >= 45 ? 'mid' : 'bad';
       return `
-        <tr>
-          <td><b>${esc(safe.name)}</b><br><span class="hint">${esc(safe.district || safe.city || '')}</span></td>
-          <td class="mono"><span class="t-pill ${cls}">${a.totalScore}/100</span></td>
-          <td class="mono">${(safe.rating || 0).toFixed(1)}</td>
-          <td class="mono">${safe.reviewsCount} (+${safe.recentReviews30d}/мес)</td>
-          <td class="mono">${safe.photosCount}</td>
-          <td class="mono">${a.counts.red} дыр</td>
-          <td class="mono">${fmtRub(a.roi.missedFirstMonthRev)}/мес</td>
-        </tr>
+        <div class="pillar-row">
+          <span>${esc(pl.label)}</span>
+          <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
+          <span class="mono" style="text-align:right;font-weight:700;">${pl.score}/${pl.max}</span>
+        </div>
       `;
     }).join('');
 
-    $('compare-table-wrap').innerHTML = `
-      <table>
-        <thead>
-          <tr><th>Точка</th><th>Индекс</th><th>Рейтинг</th><th>Отзывы</th><th>Фото</th><th>Критично</th><th>Потери/мес</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+    const topIssues = audit.findings.filter(f => f.level !== 'green').slice(0, 3);
+    $('top-findings').innerHTML = renderFindingsList(topIssues.length ? topIssues : audit.findings.slice(0, 3));
+    $('all-findings-label').textContent = `Показать все ${audit.findings.length} пунктов аудита (критично: ${audit.counts.red}, улучшить: ${audit.counts.yellow})`;
+
+    const filtered = state.findingFilter === 'all' ? audit.findings : audit.findings.filter(f => f.level === state.findingFilter);
+    $('res-findings').innerHTML = renderFindingsList(filtered);
+
+    const c = audit.competitor;
+    $('comp-desc').textContent = c.reviewGap === 0
+      ? 'По числу отзывов вы на уровне лидера района — удерживайте регулярный поток!'
+      : `Чтобы догнать лидера (${c.leaderReviews} отзывов), нужен белый поток ~${c.recommendedPace} отзывов в месяц.`;
+    $('comp-stats').innerHTML = `
+      <div class="stat-box"><span class="k">Ваши отзывы</span><span class="v">${safePt.reviewsCount}</span></div>
+      <div class="stat-box"><span class="k">Лидер района</span><span class="v">${c.leaderReviews}</span></div>
+      <div class="stat-box highlight"><span class="k">Разрыв</span><span class="v">−${c.reviewGap}</span></div>
+      <div class="stat-box"><span class="k">Срок догона</span><span class="v">${c.monthsToCatch ? c.monthsToCatch + ' мес' : 'В топе'}</span></div>
     `;
+
+    const r = audit.roi;
+    $('roi-check-slider').value = Math.min(25000, Math.max(500, r.avgCheck));
+    $('roi-check-label').textContent = fmtRub(r.avgCheck);
+    $('roi-stats').innerHTML = `
+      <div class="stat-box"><span class="k">Упущено обращений/мес</span><span class="v">~${r.missedLeadsMonth}</span></div>
+      <div class="stat-box"><span class="k">Упущено клиентов/мес</span><span class="v">~${r.missedClientsMonth}</span></div>
+      <div class="stat-box highlight"><span class="k">Потеря в 1-й месяц</span><span class="v">${fmtRub(r.missedFirstMonthRev)}</span></div>
+      <div class="stat-box"><span class="k">Потеря с учётом LTV</span><span class="v">${fmtRub(r.missedLtvRev)}</span></div>
+    `;
+
+    renderQrStudio(safePt, audit);
+    if (!$('rep-kw').value && audit.niche.seoKeywords[0]) $('rep-kw').placeholder = audit.niche.seoKeywords[0];
+    $('appeal-text').textContent = KartaEngine.generateAppealTemplate(safePt.name, '[дата и имя автора]');
+    if (!$('replies-output').innerHTML) renderReplies(safePt, audit);
+    renderProTools(safePt, audit);
   }
 
-  function runSmartPaste(rawText, scrollOnSuccess) {
+  function runSmartPaste(rawText) {
     const parsed = KartaEngine.parsePastedCardText(rawText);
     const sigWrap = $('paste-signals');
     if (!parsed.detected) {
-      sigWrap.innerHTML = `<span class="sig-chip warn">Мало данных — откройте карточку на Яндекс Картах или 2ГИС, нажмите Cmd/Ctrl+A → C и вставьте сюда целиком.</span>`;
+      sigWrap.innerHTML = `<span class="sig-chip warn">Мало данных — откройте карточку на Яндекс Картах или 2ГИС, нажмите Cmd/Ctrl+A → C и вставьте целиком.</span>`;
       return false;
     }
-    const pt = getActivePoint();
-    Object.assign(pt, parsed.patch, { isDemo: false });
+    const pt = Object.assign(createBlankPoint(), parsed.patch, {
+      isDemo: false,
+      lookupOk: true,
+      lookupNotice: 'Карточка распознана из вставленного текста — все цифры и QR-код обновлены.'
+    });
+    state.point = pt;
+    state.hasRunCheck = true;
     saveState();
     populateFormFromPoint(pt);
     renderAll();
-    sigWrap.innerHTML = parsed.signals
-      .map(s => `<span class="sig-chip ${s.startsWith('⚠') ? 'warn' : ''}">${esc(s)}</span>`)
-      .join('');
-    if (parsed.isUrlOnly) {
-      showToast('Ссылка распознана — QR готов! Для автоаудита вставьте текст страницы (Cmd+A → C)');
-    } else {
-      showToast('Карточка распознана автоматически — отчёт готов!');
-      if (scrollOnSuccess) {
-        setTimeout(() => $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' }), 220);
-      }
-    }
+    sigWrap.innerHTML = parsed.signals.map(s => `<span class="sig-chip ${s.startsWith('⚠') ? 'warn' : ''}">${esc(s)}</span>`).join('');
+    showToast('Карточка распознана — результаты ниже!');
+    setTimeout(() => $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' }), 180);
     return true;
   }
 
   function bindEvents() {
-    $('btn-start-own').addEventListener('click', startOwnBlankPoint);
-    $('btn-clear-demo').addEventListener('click', startOwnBlankPoint);
-
-    // Мгновенное автораспознавание сразу при вставке Cmd/Ctrl+V
-    $('smart-paste-input').addEventListener('paste', () => {
-      setTimeout(() => {
-        const val = $('smart-paste-input').value;
-        if (val && val.trim().length > 15) runSmartPaste(val, true);
-      }, 30);
+    $('quick-check-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      runOneClickCardCheck();
     });
 
-    // 1-клик вставка из буфера обмена
-    $('btn-paste-clipboard').addEventListener('click', async () => {
-      try {
-        if (!navigator.clipboard || !navigator.clipboard.readText) {
-          throw new Error('no-api');
-        }
-        const clip = await navigator.clipboard.readText();
-        if (!clip || !clip.trim()) {
-          showToast('Буфер пуст — сначала скопируйте страницу карточки (Cmd/Ctrl+A → C)');
-          return;
-        }
-        $('smart-paste-input').value = clip;
-        runSmartPaste(clip, true);
-      } catch (_) {
-        $('smart-paste-input').focus();
-        showToast('Нажмите Cmd+V (или Ctrl+V) прямо в поле выше — распознается само!');
-      }
-    });
-
-    $('btn-parse-paste').addEventListener('click', () => {
-      runSmartPaste($('smart-paste-input').value, true);
-    });
-
-    $('btn-clear-paste').addEventListener('click', () => {
-      $('smart-paste-input').value = '';
-      $('paste-signals').innerHTML = '';
+    $('btn-toggle-paste').addEventListener('click', () => {
+      const box = $('paste-box-wrap');
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) $('smart-paste-input').focus();
     });
 
     $('btn-toggle-manual').addEventListener('click', () => {
-      const dr = $('manual-drawer');
-      dr.open = !dr.open;
-      if (dr.open) $('f-name').focus();
-    });
-
-    $('audit-form').addEventListener('input', () => { syncPointFromForm(); renderAll(); });
-    $('audit-form').addEventListener('change', () => { syncPointFromForm(); renderAll(); });
-    $('audit-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      syncPointFromForm();
+      state.hasRunCheck = true;
+      saveState();
       renderAll();
-      $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      showToast('Диагноз обновлён');
+      $('manual-drawer').open = true;
+      $('manual-drawer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('f-name').focus();
     });
 
-    // Интерактивный ползунок среднего чека в блоке ROI
+    $('smart-paste-input').addEventListener('paste', () => {
+      setTimeout(() => {
+        const val = $('smart-paste-input').value;
+        if (val && val.trim().length > 20) runSmartPaste(val);
+      }, 30);
+    });
+    $('btn-parse-paste').addEventListener('click', () => runSmartPaste($('smart-paste-input').value));
+    $('btn-paste-clipboard').addEventListener('click', async () => {
+      try {
+        const clip = await navigator.clipboard.readText();
+        if (!clip || !clip.trim()) { showToast('Буфер пуст — сначала скопируйте страницу карточки'); return; }
+        $('smart-paste-input').value = clip;
+        runSmartPaste(clip);
+      } catch (_) {
+        $('smart-paste-input').focus();
+        showToast('Нажмите Cmd+V (или Ctrl+V) прямо в поле выше');
+      }
+    });
+
+    $('btn-new-check').addEventListener('click', () => {
+      state.point = createBlankPoint();
+      state.hasRunCheck = false;
+      saveState();
+      populateFormFromPoint(state.point);
+      $('paste-signals').innerHTML = '';
+      renderAll();
+      $('quick-url').focus();
+      $('smart-input-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    $('audit-form').addEventListener('input', () => { syncPointFromManualForm(); renderAll(); });
+    $('audit-form').addEventListener('change', () => { syncPointFromManualForm(); renderAll(); });
+
     $('roi-check-slider').addEventListener('input', (e) => {
       const val = parseInt(e.target.value, 10) || 5000;
-      const pt = getActivePoint();
-      pt.avgCheck = val;
+      getPoint().avgCheck = val;
       $('f-check').value = val;
       saveState();
       renderAll();
     });
 
     $('btn-open-yandex-serp').addEventListener('click', () => {
-      const pt = getActivePoint();
+      const pt = getPoint();
       const niche = KartaData.NICHES[pt.niche] || KartaData.NICHES.other;
       const q = `${niche.primaryRubrics[0]} ${pt.city || ''} ${pt.district || ''}`.trim();
       window.open(`https://yandex.ru/maps/?text=${encodeURIComponent(q)}`, '_blank', 'noopener');
     });
 
     $('btn-share-report').addEventListener('click', () => {
-      const pt = Object.assign({}, getActivePoint());
+      const pt = Object.assign({}, getPoint());
       delete pt.id;
       const base = window.location.origin + window.location.pathname;
       copyText(`${base}#share=${KartaEngine.encodePayload(pt)}`, 'Ссылка на отчёт скопирована!');
@@ -889,26 +866,11 @@
       });
     });
 
-    $('paywall-toggle').addEventListener('change', (e) => {
-      $('pro-body').classList.toggle('paywall-locked', e.target.checked);
-    });
-    $('btn-unlock-test').addEventListener('click', () => {
-      $('paywall-toggle').checked = false;
-      $('pro-body').classList.remove('paywall-locked');
-      showToast('PRO-доступ открыт бесплатно на тест');
-    });
-
-    // QR studio controls
     $('qr-mode').addEventListener('change', (e) => { state.qrMode = e.target.value; saveState(); renderAll(); });
     $('tent-cta').addEventListener('input', (e) => { state.tentCta = e.target.value; saveState(); $('tent-cta-preview').textContent = state.tentCta; });
     $('c-short-script-link').addEventListener('change', (e) => { state.shortScriptLink = e.target.checked; saveState(); renderAll(); });
-
     $('tent-themes').querySelectorAll('[data-tent-theme]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        state.tentTheme = btn.getAttribute('data-tent-theme');
-        saveState();
-        renderAll();
-      });
+      btn.addEventListener('click', () => { state.tentTheme = btn.getAttribute('data-tent-theme'); saveState(); renderAll(); });
     });
 
     $('btn-copy-qr-url').addEventListener('click', () => copyText($('qr-target-url').textContent, 'Ссылка скопирована!'));
@@ -918,19 +880,15 @@
       window.open(`https://clck.ru/?url=${encodeURIComponent(target)}`, '_blank', 'noopener');
     });
     $('btn-open-helper-preview').addEventListener('click', () => {
-      const pt = Object.assign({}, getActivePoint(), { name: getActivePoint().name || 'Моя точка' });
+      const pt = Object.assign({}, getPoint(), { name: getPoint().name || 'Ваша точка' });
       const url = getQrTargetUrl(pt, KartaEngine.runCardAudit(pt));
-      if (window.location.protocol === 'file:' && state.qrMode === 'helper') {
-        window.open(KartaEngine.buildReviewHelperUrl(window.location.href, pt), '_blank', 'noopener');
-      } else {
-        window.open(url, '_blank', 'noopener');
-      }
+      window.open(url, '_blank', 'noopener');
     });
     $('btn-download-qr-png').addEventListener('click', () => {
       const canvas = document.createElement('canvas');
       KartaQR.drawToCanvas(canvas, $('qr-target-url').textContent, { scale: 12, quietZone: 4 });
       const a = document.createElement('a');
-      a.download = `qr-${(getActivePoint().name || 'tochka').toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-')}.png`;
+      a.download = `qr-${(getPoint().name || 'tochka').toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-')}.png`;
       a.href = canvas.toDataURL('image/png');
       a.click();
       showToast('QR-код сохранён в PNG');
@@ -943,16 +901,15 @@
       setTimeout(() => { document.body.classList.remove('print-tent-only'); slot.innerHTML = ''; }, 300);
     });
 
-    // PRO 2 & 3
     $('btn-gen-replies').addEventListener('click', async () => {
-      const safe = Object.assign({}, getActivePoint(), { name: getActivePoint().name || 'Моя точка' });
+      const safe = Object.assign({}, getPoint(), { name: getPoint().name || 'Ваша точка' });
       const audit = KartaEngine.runCardAudit(safe);
       const api = getBackendUrl();
       const reviewText = $('rep-text').value.trim();
       if (api && reviewText.length >= 5) {
         const btn = $('btn-gen-replies');
         btn.disabled = true;
-        btn.textContent = 'Генерируем живой ИИ-ответ...';
+        btn.textContent = 'Генерируем живой ответ...';
         try {
           const r = await fetch(`${api}/api/reviews/reply`, {
             method: 'POST',
@@ -968,7 +925,7 @@
           });
           const data = await r.json();
           if (r.ok && data.ok && Array.isArray(data.variants)) {
-            $('replies-output').innerHTML = `<p class="hint" style="margin-bottom:8px;">✨ Живые ИИ-ответы (<b>${esc(data.provider)}</b>${data.leftToday != null ? ` · осталось сегодня: ${data.leftToday}` : ''})</p>` +
+            $('replies-output').innerHTML = `<p class="hint" style="margin-bottom:8px;">✨ Живые ИИ-ответы (<b>${esc(data.provider)}</b>)</p>` +
               data.variants.map((v, idx) => `
                 <div class="copy-block">
                   <div class="copy-block-head">
@@ -983,12 +940,12 @@
             });
             showToast('Готово 3 живых ИИ-ответа!');
             btn.disabled = false;
-            btn.textContent = 'Сгенерировать 3 варианта ответа';
+            btn.textContent = 'Сгенерировать 3 ответа ИИ';
             return;
           }
         } catch (_) {}
         btn.disabled = false;
-        btn.textContent = 'Сгенерировать 3 варианта ответа';
+        btn.textContent = 'Сгенерировать 3 ответа ИИ';
       }
       renderReplies(safe, audit);
       showToast('Готово 3 варианта SEO-ответа');
@@ -996,163 +953,75 @@
     $('btn-copy-appeal').addEventListener('click', () => copyText($('appeal-text').textContent, 'Шаблон жалобы скопирован!'));
     $('btn-copy-services').addEventListener('click', () => copyText($('services-template-text').textContent, 'Список услуг скопирован!'));
 
-    // Подключение к geo-api (если задан backendUrl в config.js или ?api=...)
-    const backendUrl = getBackendUrl();
-    if (backendUrl) {
-      $('btn-server-lookup').classList.remove('hidden');
-      trackEvent('page_view');
-      $('btn-server-lookup').addEventListener('click', async () => {
-        const pt = getActivePoint();
-        const btn = $('btn-server-lookup');
-        if (!pt.name && !pt.siteUrl) {
-          $('manual-drawer').open = true;
-          $('f-name').focus();
-          showToast('Укажите название точки или сайт для автопроверки');
-          return;
-        }
-        btn.disabled = true;
-        btn.textContent = 'Проверяем 2ГИС и сайт...';
-        try {
-          const r = await fetch(`${backendUrl}/api/geo/lookup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: pt.name, city: pt.city, siteUrl: pt.siteUrl })
-          });
-          const data = await r.json();
-          const chips = [];
-          if (data.twogis) {
-            pt.has2gisSynced = true;
-            if (data.twogis.gisUrl && !pt.gisUrl) pt.gisUrl = data.twogis.gisUrl;
-            if (data.twogis.address && !pt.district) pt.district = data.twogis.address;
-            chips.push(`✓ 2ГИС: рейтинг ${data.twogis.rating || '—'}, отзывов ${data.twogis.reviewsCount ?? '—'}`);
-          }
-          if (data.siteReport) {
-            const sr = data.siteReport;
-            chips.push(sr.https ? `✓ Сайт HTTPS (${sr.elapsedMs} мс)` : '⚠ Сайт без HTTPS');
-            chips.push(sr.schema?.hasLocalBusiness ? '✓ Schema.org LocalBusiness есть' : '⚠ Нет Schema.org на сайте');
-            if (sr.links?.yandexUrl && !pt.yandexUrl) { pt.yandexUrl = sr.links.yandexUrl; chips.push('✓ Найдена ссылка на Яндекс Карты'); }
-            if (sr.links?.gisUrl && !pt.gisUrl) { pt.gisUrl = sr.links.gisUrl; chips.push('✓ Найдена ссылка на 2ГИС'); }
-            if (sr.links?.tgUrl && !pt.tgContact) { pt.tgContact = sr.links.tgUrl; }
-          }
-          if (!chips.length) chips.push('⚠ По 2ГИС/сайту ничего не найдено — уточните название или сайт');
-          pt.isDemo = false;
-          saveState();
-          populateFormFromPoint(pt);
-          renderAll();
-          $('paste-signals').innerHTML = chips.map(s => `<span class="sig-chip ${s.startsWith('⚠') ? 'warn' : ''}">${esc(s)}</span>`).join('');
-          showToast('Автопроверка завершена!');
-        } catch (_) {
-          showToast('Сервер недоступен — проверьте соединение');
-        }
-        btn.disabled = false;
-        btn.textContent = '⚡ Автопроверка 2ГИС и сайта';
-      });
-    }
-
     // Order / pricing modal
     const ordBack = $('order-backdrop');
     let selectedPlan = '';
-    if (ordBack) {
-      document.querySelectorAll('[data-order-plan]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          selectedPlan = btn.getAttribute('data-order-plan') || '';
-          const pt = getActivePoint();
-          $('order-plan-label').textContent = selectedPlan;
-          $('ord-point').value = [pt.name, pt.city, pt.yandexUrl || pt.siteUrl].filter(Boolean).join(' · ');
-          $('order-status').textContent = '';
-          ordBack.classList.remove('hidden');
-          trackEvent('order_open', { plan: selectedPlan });
-        });
-      });
-      $('btn-close-order').addEventListener('click', () => ordBack.classList.add('hidden'));
-      ordBack.addEventListener('click', (e) => { if (e.target === ordBack) ordBack.classList.add('hidden'); });
-      $('order-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const pointName = ($('ord-point').value || '').trim();
-        const contact = ($('ord-contact').value || '').trim();
-        const pt = getActivePoint();
-        const planLow = selectedPlan.toLowerCase();
-        const tariffId = planLow.includes('250') ? 'recs_250'
-          : planLow.includes('3 карточ') ? 'pack_3'
-          : planLow.includes('10 карточ') ? 'pack_10'
-          : planLow.includes('vip') || planLow.includes('5 000') ? 'vip_5000'
-          : 'pro_950';
-        const api = getBackendUrl();
-        const stEl = $('order-status');
-        stEl.textContent = 'Сохраняем заявку...';
-        if (api) {
-          try {
-            const r = await fetch(`${api}/api/orders/create`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                app: 'checkgeo',
-                tariffId,
-                contact,
-                input: {
-                  name: pt.name || pointName,
-                  city: pt.city || '',
-                  district: pt.district || '',
-                  niche: pt.niche || 'other',
-                  yandexUrl: pt.yandexUrl || (/yandex\./i.test(pointName) ? pointName : ''),
-                  gisUrl: pt.gisUrl || '',
-                  siteUrl: pt.siteUrl || ''
-                }
-              })
-            });
-            const d = await r.json();
-            if (r.ok && d.ok && d.mode === 'payment' && d.paymentUrl) {
-              stEl.textContent = 'Переходим к оплате...';
-              window.location.href = d.paymentUrl;
-              return;
-            }
-          } catch (_) {}
-        }
-        const txt = `Заявка CheckGeo (${selectedPlan}): ${pointName} | Контакт: ${contact}`;
-        copyText(txt, 'Заявка зафиксирована и скопирована!');
-        stEl.textContent = '✓ Заявка отправлена! Мы свяжемся по указанному контакту (текст также скопирован в буфер).';
-        setTimeout(() => ordBack.classList.add('hidden'), 1800);
-      });
-    }
-
-    // Feedback decision block
-    $('fb-choices').querySelectorAll('[data-fb]').forEach(btn => {
+    document.querySelectorAll('[data-order-plan]').forEach(btn => {
       btn.addEventListener('click', () => {
-        $('fb-choices').querySelectorAll('[data-fb]').forEach(b => b.classList.remove('picked'));
-        btn.classList.add('picked');
-        state.selectedFeedback = btn.getAttribute('data-fb');
+        selectedPlan = btn.getAttribute('data-order-plan') || '';
+        const pt = getPoint();
+        $('order-plan-label').textContent = selectedPlan;
+        $('ord-point').value = [pt.name, pt.city, pt.yandexUrl || pt.siteUrl].filter(Boolean).join(' · ');
+        $('order-status').textContent = '';
+        ordBack.classList.remove('hidden');
+        trackEvent('order_open', { plan: selectedPlan });
       });
     });
-    $('btn-copy-feedback').addEventListener('click', () => {
-      const pt = Object.assign({}, getActivePoint(), { name: getActivePoint().name || 'Моя точка' });
-      const a = KartaEngine.runCardAudit(pt);
-      const verdict = state.selectedFeedback || 'Протестировал КартаЧек';
-      const comment = ($('fb-comment').value || '').trim();
-      trackEvent('verdict', { verdict, comment, score: a.totalScore });
-      const msg = `Тест КартаЧек (${pt.name}, индекс ${a.totalScore}/100): ${verdict}${comment ? ' | Комментарий: ' + comment : ''}`;
-      copyText(msg, 'Вердикт скопирован — вставьте в Telegram!');
+    $('btn-close-order').addEventListener('click', () => ordBack.classList.add('hidden'));
+    ordBack.addEventListener('click', (e) => { if (e.target === ordBack) ordBack.classList.add('hidden'); });
+    $('order-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pointName = ($('ord-point').value || '').trim();
+      const contact = ($('ord-contact').value || '').trim();
+      const pt = getPoint();
+      const planLow = selectedPlan.toLowerCase();
+      const tariffId = planLow.includes('250') ? 'recs_250'
+        : planLow.includes('3 карточ') ? 'pack_3'
+        : planLow.includes('10 карточ') ? 'pack_10'
+        : planLow.includes('vip') || planLow.includes('5 000') ? 'vip_5000'
+        : 'pro_950';
+      const api = getBackendUrl();
+      const stEl = $('order-status');
+      stEl.textContent = 'Сохраняем заявку...';
+      if (api) {
+        try {
+          const r = await fetch(`${api}/api/orders/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              app: 'checkgeo',
+              tariffId,
+              contact,
+              input: {
+                name: pt.name || pointName,
+                city: pt.city || '',
+                district: pt.district || '',
+                niche: pt.niche || 'other',
+                yandexUrl: pt.yandexUrl || (/yandex\./i.test(pointName) ? pointName : ''),
+                gisUrl: pt.gisUrl || '',
+                siteUrl: pt.siteUrl || ''
+              }
+            })
+          });
+          const d = await r.json();
+          if (r.ok && d.ok && d.mode === 'payment' && d.paymentUrl) {
+            stEl.textContent = 'Переходим к оплате...';
+            window.location.href = d.paymentUrl;
+            return;
+          }
+        } catch (_) {}
+      }
+      const txt = `Заявка CheckGeo (${selectedPlan}): ${pointName} | Контакт: ${contact}`;
+      copyText(txt, 'Заявка отправлена и скопирована!');
+      stEl.textContent = '✓ Заявка принята! Мы свяжемся по указанному контакту.';
+      setTimeout(() => ordBack.classList.add('hidden'), 1800);
     });
-  }
 
-  function getBackendUrl() {
-    return (window.KARTA_CONFIG && window.KARTA_CONFIG.backendUrl) ? window.KARTA_CONFIG.backendUrl.replace(/\/+$/, '') : '';
-  }
-
-  function trackEvent(event, meta) {
-    const api = getBackendUrl();
-    if (!api) return;
-    try {
-      fetch(`${api}/api/telemetry/event`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ app: 'kartachek', event, meta: meta || {} }),
-        keepalive: true
-      }).catch(() => {});
-    } catch (_) {}
+    trackEvent('page_view');
   }
 
   initStaticControls();
-  populateFormFromPoint(getActivePoint());
+  populateFormFromPoint(getPoint());
   $('qr-mode').value = state.qrMode || 'helper';
   $('tent-cta').value = state.tentCta || 'Понравилось у нас? Поделитесь за 30 секунд!';
   $('c-short-script-link').checked = state.shortScriptLink !== false;
