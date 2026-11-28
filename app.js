@@ -435,18 +435,33 @@
             const sem = data.yandexCard.semantics || {};
             if (m.title && !pt.name) pt.name = m.title;
             if (m.address && !pt.district) pt.district = m.address;
+            const detectedNiche = KartaEngine.detectNicheFromText([m.title, ...(m.categories || []), pt.name].filter(Boolean).join(' '));
+            if (detectedNiche) pt.niche = detectedNiche;
             if (m.rating != null) pt.rating = Number(m.rating);
             if (m.reviewCount != null) pt.reviewsCount = Number(m.reviewCount);
             if (sem.recent30d != null) pt.recentReviews30d = Number(sem.recent30d);
             if (sem.replyRate != null) pt.replyRate = Number(sem.replyRate);
             if (m.photoCount != null) pt.photosCount = Number(m.photoCount);
             if (m.hasBooking) pt.hasOnlineBooking = true;
+            if (m.hasStories) pt.hasNewsStories = true;
             if (m.hasCompetitorAds) pt.hasCompetitorAds = true;
-            if (m.hasGoodPlace) pt.verified = true;
+            if (m.isVerified || m.hasGoodPlace) pt.verified = true;
+            if (Array.isArray(m.categories) && m.categories.length >= 2) pt.rubricMatchesLeaders = true;
             if (!pt.siteUrl && Array.isArray(m.urls) && m.urls[0]) pt.siteUrl = m.urls[0];
+            if (!pt.tgContact && Array.isArray(m.socialLinks)) {
+              const tg = m.socialLinks.find(s => /telegram/i.test(s.type || '') && s.href);
+              if (tg) pt.tgContact = tg.href;
+            }
             pt.lookupOk = true;
-            pt.lookupNotice = `Данные загружены прямо с Яндекс Карт: рейтинг ${pt.rating}, ${pt.reviewsCount} отзывов (${pt.recentReviews30d} за 30 дней), ответы ${pt.replyRate}%.`;
+            const unansNote = sem.unansweredRecent30d >= 2 ? ` ⚠ На ${sem.unansweredRecent30d} свежих отзывов за месяц нет ответа!` : '';
+            pt.lookupNotice = `Данные загружены прямо с Яндекс Карт: рейтинг ${pt.rating}, ${pt.reviewsCount} отзывов (${pt.recentReviews30d} за 30 дней), ответы ${pt.replyRate}%.${unansNote}`;
             chips.push(`✓ Яндекс Карты: ${pt.rating} ★ · ${pt.reviewsCount} отз.`);
+            if (m.httpOnlyUrl) chips.push('⚠ В Я.Картах сайт указан через http:// (нужен https:// + UTM)');
+            const yPh = String(m.phones?.[0] || '').replace(/\D/g, '').slice(-10);
+            const sPhList = (data.siteReport?.phones || []).map(x => String(x).replace(/\D/g, '').slice(-10)).filter(Boolean);
+            if (yPh.length === 10 && sPhList.length && !sPhList.includes(yPh)) {
+              chips.push(`⚠ Разные телефоны: Я.Карты ${m.phones[0]} vs сайт ${data.siteReport.phones[0]}`);
+            }
           } else if (pt.yandexUrl && data.yandexCard && data.yandexCard.captchaBlocked) {
             pt.lookupOk = false;
             pt.lookupNotice = 'Яндекс Карты запросили капчу при авточтении — QR-код уже готов, а для точного индекса уточните 4 цифры ниже или вставьте текст карточки.';
