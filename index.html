@@ -8,9 +8,11 @@
   <meta property="og:title" content="CheckGeo — рентген вашей точки на Яндекс Картах, 2ГИС и отзовиках">
   <meta property="og:description" content="Проверьте здоровье карточки за 30 секунд, найдите утечки клиентов и соберите QR-стенд для белых отзывов.">
   <meta property="og:type" content="website">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111315'/%3E%3Cpath d='M16 6a7 7 0 0 0-7 7c0 5.5 7 13 7 13s7-7.5 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z' fill='%23FACC15'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"></noscript>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -121,7 +123,7 @@
             <span class="hint">Развернуть ▾</span>
           </summary>
 
-          <form id="audit-form">
+          <form id="audit-form" novalidate>
             <div class="form-grid">
               <div class="field">
                 <label for="f-name">Название (как на вывеске / картах)</label>
@@ -133,7 +135,7 @@
               </div>
               <div class="field">
                 <label for="f-yandex-url">Ссылка на Яндекс Карты (для QR)</label>
-                <input type="url" id="f-yandex-url" placeholder="https://yandex.ru/maps/org/.../123456/">
+                <input type="text" id="f-yandex-url" inputmode="url" placeholder="https://yandex.ru/maps/org/.../123456/">
                 <span class="hint" id="yandex-url-hint">Извлечём ID для QR и прямой ссылки</span>
               </div>
             </div>
@@ -178,10 +180,10 @@
               <div class="form-grid">
                 <div class="field"><label for="f-city">Город</label><input type="text" id="f-city" placeholder="Москва"></div>
                 <div class="field"><label for="f-district">Район / метро / ЖК</label><input type="text" id="f-district" placeholder="ЖК Скандинавия, м. Коммунарка"></div>
-                <div class="field"><label for="f-site-url">Сайт точки (для UTM)</label><input type="url" id="f-site-url" placeholder="https://vash-site.ru"></div>
+                <div class="field"><label for="f-site-url">Сайт точки (для UTM)</label><input type="text" id="f-site-url" inputmode="url" placeholder="vash-site.ru"></div>
                 <div class="field">
                   <label for="f-gis-url">Ссылка на 2ГИС</label>
-                  <input type="url" id="f-gis-url" placeholder="https://2gis.ru/moscow/firm/...">
+                  <input type="text" id="f-gis-url" inputmode="url" placeholder="https://2gis.ru/moscow/firm/...">
                   <span class="hint" id="gis-url-hint">Для QR-стенда и отзывов 2ГИС</span>
                 </div>
                 <div class="field"><label for="f-reply-rate">Ответы владельца (%)</label><input type="number" id="f-reply-rate" min="0" max="100" placeholder="50"></div>
